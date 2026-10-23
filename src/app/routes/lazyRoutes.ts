@@ -1,0 +1,11 @@
+export const dashboardRoute = () => import('@/features/dashboard/DashboardPage');
+export const adminRoute = () => import('@/features/admin/AdminDashboardPage');
+export const studentsRoute = () => import('@/features/students/StudentsPage');
+export const academicsRoute = () => import('@/features/academics/AcademicsPage');
+export const financeRoute = () => import('@/features/finance/FinancePage');
+export const hrRoute = () => import('@/features/hr/HRPage');
+export const reportsRoute = () => import('@/features/reports/ReportsPage');
+export const settingsRoute = () => import('@/features/settings/SettingsPage');
+export const loginRoute = () => import('@/features/auth/LoginPage');
+export const forgotPasswordRoute = () => import('@/features/auth/ForgotPasswordPage');
+export const resetPasswordRoute = () => import('@/features/auth/ResetPasswordPage');
