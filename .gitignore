@@ -1,21 +1,12 @@
 # Dependencies
 node_modules/
-backend/vendor/
 
 # Build outputs
 dist/
 build/
-*.exe
-*.dll
-*.so
-*.dylib
-
-# Backend build
-backend/build/
-backend/bin/
+*.local
 
 # Environment files
-ai-keys.env
 .env
 .env.*
 !.env.example
@@ -25,7 +16,10 @@ ai-keys.env
 .vscode/
 *.swp
 *.swo
+
+# OS
 .DS_Store
+Thumbs.db
 
 # Logs
 *.log
@@ -35,34 +29,9 @@ yarn-error.log*
 
 # Test coverage
 coverage/
-*.lcov
 
-# Keys and certs
-*.pem
-*.key
-*.p12
-*.pfx
-keys/
+# TypeScript cache
+*.tsbuildinfo
 
-# Database
-*.sqlite
-*.db
-
-# OS
-Thumbs.db
-
-# AI/Tooling
-.aider.kickoff
-litellm.config.yaml
-.omniroute/
-
-# Docker
-.docker/
-
-# Terraform
-*.tfstate
-*.tfstate.backup
-.terraform/
-
-# Misc
-*.local
+# Vite
+.vite/
