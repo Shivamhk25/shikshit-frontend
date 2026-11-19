@@ -1,0 +1,8 @@
+/*
+ * Tailwind for the new design system. Only theme + utilities are loaded: no global reset (preflight), so existing
+ * screens keep their current look until they are migrated. Colours come from tokens.css (generated).
+ */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import './tokens.css';
+@import 'tailwindcss/utilities.css' layer(utilities);
