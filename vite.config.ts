@@ -2,6 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+const apiTarget = process.env.VITE_API_PROXY ?? 'http://localhost:8080';
+// The Prism mock from shikshit-backend (`make mock`) serves the contract without the /api/v1 prefix.
+const useMock = process.env.VITE_API_MOCK === '1';
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -26,11 +30,12 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: apiTarget,
         changeOrigin: true,
+        ...(useMock ? { rewrite: (p: string) => p.replace(/^\/api\/v1/, '') } : {}),
       },
       '/hubs': {
-        target: 'http://localhost:3000',
+        target: apiTarget,
         ws: true,
       },
     },
