@@ -10,10 +10,13 @@ const text = (v: string | number | boolean | undefined) => String(v ?? '').trim(
 const orNull = (v: string | number | boolean | undefined) => text(v) || null;
 const intOrNull = (v: string | number | boolean | undefined) => (text(v) === '' ? null : Number(v));
 
-/** 2026-04-01 -> 1 Apr 2026, without a timezone shift. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** 2026-04-01 -> 1 Apr 2026. A fixed table, not Intl, so the web and every device print the same text. */
 export const formatDate = (iso: string): string => {
-  const [y, m, d] = iso.split('-').map(Number);
-  return y && m && d ? new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : iso;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  const month = m ? MONTHS[Number(m[2]) - 1] : undefined;
+  return m && month ? `${Number(m[3])} ${month} ${m[1]}` : iso;
 };
 
 const statusColumn = <T extends { status: string }>(): ColumnDef<T> => ({ key: 'status', label: 'Status', render: (r) => (r.status === 'active' ? 'Active' : 'Inactive') });
