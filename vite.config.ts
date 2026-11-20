@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
 const apiTarget = process.env.VITE_API_PROXY ?? 'http://localhost:8080';
@@ -7,7 +8,7 @@ const apiTarget = process.env.VITE_API_PROXY ?? 'http://localhost:8080';
 const useMock = process.env.VITE_API_MOCK === '1';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
