@@ -2,13 +2,13 @@ import type { ColumnDef, CrudDescriptor, FieldDef, FormValues } from '../../crud
 
 /** Descriptors for the academic structure: years, terms, classes, sections, subjects (ACA-15/16/20/21/22). */
 
-const STATUS_OPTIONS = [
+export const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
 ];
-const text = (v: string | number | boolean | undefined) => String(v ?? '').trim();
-const orNull = (v: string | number | boolean | undefined) => text(v) || null;
-const intOrNull = (v: string | number | boolean | undefined) => (text(v) === '' ? null : Number(v));
+export const text = (v: string | number | boolean | undefined) => String(v ?? '').trim();
+export const orNull = (v: string | number | boolean | undefined) => text(v) || null;
+export const intOrNull = (v: string | number | boolean | undefined) => (text(v) === '' ? null : Number(v));
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -113,6 +113,8 @@ export interface SchoolClass {
   id: string;
   code: string;
   name: string;
+  divisionId: string | null;
+  divisionName: string | null;
   displayOrder: number;
   youngestAgeMonths: number | null;
   oldestAgeMonths: number | null;
@@ -131,6 +133,7 @@ export const classesDescriptor: CrudDescriptor<SchoolClass> = {
   columns: [
     { key: 'code', label: 'Code', sort: 'code' },
     { key: 'name', label: 'Name', sort: 'name' },
+    { key: 'divisionName', label: 'Division', render: (r) => r.divisionName ?? '—' },
     { key: 'displayOrder', label: 'Order', sort: 'displayOrder' },
     { key: 'youngestAgeMonths', label: 'Youngest (months)', sort: 'youngestAgeMonths', render: (r) => (r.youngestAgeMonths === null ? '—' : String(r.youngestAgeMonths)) },
     statusColumn<SchoolClass>(),
@@ -138,6 +141,7 @@ export const classesDescriptor: CrudDescriptor<SchoolClass> = {
   fields: [
     { key: 'code', label: 'Code', kind: 'text', required: true, maxLength: 20 },
     { key: 'name', label: 'Name', kind: 'text', required: true, maxLength: 100 },
+    { key: 'divisionId', label: 'Division', kind: 'select', remote: { endpoint: '/school-divisions', value: 'id', label: 'name' } },
     { key: 'displayOrder', label: 'Display order', kind: 'number', required: true, min: 0, max: 100000, defaultValue: 0 },
     { key: 'youngestAgeMonths', label: 'Youngest age (months)', kind: 'number', min: 0, max: 600 },
     { key: 'oldestAgeMonths', label: 'Oldest age (months)', kind: 'number', min: 0, max: 600 },
@@ -147,6 +151,7 @@ export const classesDescriptor: CrudDescriptor<SchoolClass> = {
   toForm: (r): FormValues => ({
     code: r.code,
     name: r.name,
+    divisionId: r.divisionId ?? '',
     displayOrder: r.displayOrder,
     youngestAgeMonths: r.youngestAgeMonths ?? '',
     oldestAgeMonths: r.oldestAgeMonths ?? '',
@@ -156,6 +161,7 @@ export const classesDescriptor: CrudDescriptor<SchoolClass> = {
   toInput: (v) => ({
     code: text(v.code),
     name: text(v.name),
+    divisionId: orNull(v.divisionId),
     displayOrder: Number(v.displayOrder || 0),
     youngestAgeMonths: intOrNull(v.youngestAgeMonths),
     oldestAgeMonths: intOrNull(v.oldestAgeMonths),
@@ -202,6 +208,27 @@ export const sectionsDescriptor: CrudDescriptor<Section> = {
 
 // ---- subjects
 
+export const SUBJECT_CATEGORIES = [
+  { value: 'core', label: 'Core' },
+  { value: 'elective', label: 'Elective' },
+  { value: 'language', label: 'Language' },
+  { value: 'optional', label: 'Optional' },
+  { value: 'vocational', label: 'Vocational' },
+];
+export const SUBJECT_AREAS = [
+  { value: 'languages', label: 'Languages' },
+  { value: 'mathematics', label: 'Mathematics' },
+  { value: 'science', label: 'Science' },
+  { value: 'social_science', label: 'Social science' },
+  { value: 'arts', label: 'Arts' },
+  { value: 'physical_education', label: 'Physical education' },
+  { value: 'technology', label: 'Technology' },
+  { value: 'vocational', label: 'Vocational' },
+  { value: 'life_skills', label: 'Life skills' },
+  { value: 'other', label: 'Other' },
+];
+const labelOf = (list: { value: string; label: string }[], v: string) => list.find((o) => o.value === v)?.label ?? v;
+
 export interface Subject {
   id: string;
   code: string;
@@ -229,8 +256,8 @@ export const subjectsDescriptor: CrudDescriptor<Subject> = {
   columns: [
     { key: 'code', label: 'Code', sort: 'code' },
     { key: 'name', label: 'Name', sort: 'name' },
-    { key: 'category', label: 'Category', sort: 'category' },
-    { key: 'area', label: 'Area', sort: 'area' },
+    { key: 'category', label: 'Category', sort: 'category', render: (r) => labelOf(SUBJECT_CATEGORIES, r.category) },
+    { key: 'area', label: 'Area', sort: 'area', render: (r) => labelOf(SUBJECT_AREAS, r.area) },
     { key: 'credits', label: 'Credits', sort: 'credits' },
     statusColumn<Subject>(),
   ],
@@ -239,8 +266,8 @@ export const subjectsDescriptor: CrudDescriptor<Subject> = {
     { key: 'name', label: 'Name', kind: 'text', required: true, maxLength: 100 },
     { key: 'shortName', label: 'Short name', kind: 'text', maxLength: 20 },
     { key: 'color', label: 'Colour', kind: 'text', maxLength: 7, hint: 'Optional, like #2F5BFF.' },
-    { key: 'category', label: 'Category', kind: 'text', required: true, maxLength: 50 },
-    { key: 'area', label: 'Area', kind: 'text', required: true, maxLength: 50 },
+    { key: 'category', label: 'Category', kind: 'select', required: true, options: SUBJECT_CATEGORIES },
+    { key: 'area', label: 'Area', kind: 'select', required: true, options: SUBJECT_AREAS },
     { key: 'scholastic', label: 'Scholastic', kind: 'checkbox', defaultValue: false },
     { key: 'coScholastic', label: 'Co-scholastic', kind: 'checkbox', defaultValue: false },
     { key: 'nonScholastic', label: 'Non-scholastic', kind: 'checkbox', defaultValue: false },
