@@ -8,6 +8,7 @@ import { defineRegistry } from '@shikshit/shared/access';
 export const registry = defineRegistry([
   { screenId: 'home', title: 'Home', parity: 'Both', web: { path: '/' }, mobile: { route: '/home' } },
   { screenId: 'onboarding', title: 'Onboarding', permission: 'onb.workspace.view', module: 'onb', parity: 'Web-only', web: { path: '/onboarding' } },
+  { screenId: 'rooms', title: 'Rooms', permission: 'aca.rooms.view', module: 'aca', parity: 'Companion', web: { path: '/rooms' }, mobile: { route: '/rooms' } },
   { screenId: 'profile', title: 'Profile', parity: 'Both', web: { path: '/profile' }, mobile: { route: '/profile' } },
 ]);
 

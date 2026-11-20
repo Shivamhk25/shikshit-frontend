@@ -5,6 +5,7 @@ import { AppShell } from './AppShell';
 import { AuthProvider, useAuth } from './AuthProvider';
 import { HomePage, NotAvailablePage, OnboardingPage, ProfilePage, RequirePermission } from './pages';
 import { SignInPage } from './SignInPage';
+import { RoomsPage } from '../features/aca/RoomsPage';
 
 function Gate() {
   const { status } = useAuth();
@@ -27,6 +28,14 @@ function Gate() {
             element={
               <RequirePermission path="/onboarding">
                 <OnboardingPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="rooms"
+            element={
+              <RequirePermission path="/rooms">
+                <RoomsPage />
               </RequirePermission>
             }
           />
