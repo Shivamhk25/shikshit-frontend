@@ -28,7 +28,7 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-function FieldControl({ field, value, error, onChange }: { field: FieldDef; value: string | number | boolean; error?: string; onChange: (v: string | number | boolean) => void }) {
+function FieldControl({ field, value, error, onChange, options }: { field: FieldDef; value: string | number | boolean; error?: string; onChange: (v: string | number | boolean) => void; options?: { value: string; label: string }[] }) {
   const id = useId();
   if (field.kind === 'checkbox') {
     return (
@@ -38,11 +38,12 @@ function FieldControl({ field, value, error, onChange }: { field: FieldDef; valu
       </label>
     );
   }
-  if (field.kind === 'text' || field.kind === 'number') {
+  if (field.kind === 'text' || field.kind === 'number' || field.kind === 'date') {
     return (
       <Input
         label={field.required ? `${field.label} *` : field.label}
-        type={field.kind === 'number' ? 'number' : 'text'}
+        type={field.kind === 'number' ? 'number' : field.kind === 'date' ? 'date' : 'text'}
+        step={field.step}
         value={String(value)}
         onChange={(e) => onChange(e.target.value)}
         error={error}
@@ -62,7 +63,12 @@ function FieldControl({ field, value, error, onChange }: { field: FieldDef; valu
       {field.kind === 'select' ? (
         <select id={id} className={`${common} h-10`} value={String(value)} onChange={(e) => onChange(e.target.value)} aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-e` : undefined}>
           {!field.required ? <option value="">—</option> : null}
-          {field.options?.map((o) => (
+          {field.required && value === '' ? (
+            <option value="" disabled>
+              Choose…
+            </option>
+          ) : null}
+          {(options ?? field.options)?.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
@@ -88,7 +94,16 @@ type Editing = { mode: 'create' } | { mode: 'edit'; row: { id: string } };
  * List page for one resource: search, sortable columns, paging, and a side-sheet form. Add / Edit / Delete appear only
  * for users who hold the matching permission; the server enforces the same rules on every request.
  */
-export function CrudPage<T extends { id: string }>({ descriptor: d, client }: { descriptor: CrudDescriptor<T>; client: CrudClient<T, Record<string, unknown>> }) {
+export function CrudPage<T extends { id: string }>({
+  descriptor: d,
+  client,
+  optionsClient,
+}: {
+  descriptor: CrudDescriptor<T>;
+  client: CrudClient<T, Record<string, unknown>>;
+  /** Builds a client for another resource; needed only by fields with `remote` options. */
+  optionsClient?: (endpoint: string) => CrudClient<Record<string, unknown> & { id: string }, never>;
+}) {
   const access = useAccessState();
   const can = (code: string) => access.phase === 'ready' && access.access.can(code);
   const canCreate = can(d.permissions.create);
@@ -112,6 +127,20 @@ export function CrudPage<T extends { id: string }>({ descriptor: d, client }: { 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<T | null>(null);
   const [notice, setNotice] = useState('');
+  const [remote, setRemote] = useState<Record<string, { value: string; label: string }[]>>({});
+
+  // Options that come from another resource (for example the academic year of a term) load when the form first opens.
+  useEffect(() => {
+    if (!editing || !optionsClient) return;
+    d.fields.forEach((f) => {
+      const src = f.remote;
+      if (!src || remote[f.key]) return;
+      optionsClient(src.endpoint)
+        .list({ page: 1, pageSize: 200, sort: undefined })
+        .then((r) => setRemote((prev) => ({ ...prev, [f.key]: r.items.map((row) => ({ value: String(row[src.value]), label: String(row[src.label]) })) })))
+        .catch(() => setRemote((prev) => ({ ...prev, [f.key]: [] })));
+    });
+  }, [editing, optionsClient, d.fields, remote]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -313,7 +342,7 @@ export function CrudPage<T extends { id: string }>({ descriptor: d, client }: { 
         <Sheet title={editing.mode === 'create' ? `Add ${d.singular}` : `Edit ${d.singular}`} onClose={close}>
           <form onSubmit={(e) => void submit(e)} className="flex flex-1 flex-col gap-4" noValidate>
             {d.fields.map((f) => (
-              <FieldControl key={f.key} field={f} value={values[f.key] ?? ''} error={fieldErrors[f.key]} onChange={(v) => setValues({ ...values, [f.key]: v })} />
+              <FieldControl key={f.key} field={f} value={values[f.key] ?? ''} error={fieldErrors[f.key]} options={remote[f.key]} onChange={(v) => setValues({ ...values, [f.key]: v })} />
             ))}
             {formError ? (
               <p role="alert" className="text-sm text-danger">
