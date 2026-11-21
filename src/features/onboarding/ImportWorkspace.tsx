@@ -4,7 +4,8 @@ import { Button, cx } from '../../design-system';
 import { useAccessState } from '../../shell/AccessProvider';
 import { useAuth } from '../../shell/AuthProvider';
 import { API_BASE } from '../../shell/web-session';
-import { createImportApi, SETTLED, type ImportApi, type ImportBatch, type ImportEntity } from './importApi';
+import { createImportApi, SETTLED, type ImportApi, type ImportBatch, type ImportEntity, type ImportPack } from './importApi';
+import { PackPanel } from './PackPanel';
 import { STATUS_LABEL, formatDate } from './format';
 import { pollConfig } from './pollConfig';
 import { PrepareStep } from './PrepareStep';
@@ -132,6 +133,9 @@ export function ImportWorkspace({ pollMs = pollConfig.ms }: { pollMs?: number })
   const [loadError, setLoadError] = useState<string | null>(null);
   const [batchId, setBatchId] = useState<string | null>(null);
   const [listVersion, setListVersion] = useState(0);
+  const [pack, setPack] = useState<ImportPack | null>(null);
+  const [chosen, setChosen] = useState('');
+  const prepare = useRef<HTMLDivElement>(null);
   const { batch, setBatch, error, refresh } = useBatch(api, batchId, pollMs);
   const heading = useRef<HTMLHeadingElement>(null);
 
@@ -144,12 +148,25 @@ export function ImportWorkspace({ pollMs = pollConfig.ms }: { pollMs?: number })
   }, [api]);
   useEffect(loadEntities, [loadEntities]);
 
+  // The setup checklist is optional: a caller without the pack's domain permission gets a 404 and simply sees no panel.
+  useEffect(() => {
+    let stop = false;
+    api
+      .pack('academic')
+      .then((p) => !stop && setPack(p))
+      .catch(() => !stop && setPack(null));
+    return () => {
+      stop = true;
+    };
+  }, [api, listVersion]);
+
   const step = stepOf(batch);
   useEffect(() => {
     heading.current?.focus();
   }, [step]);
 
   if (access.phase !== 'ready') return null;
+  const entityKey = entities?.some((e) => e.key === chosen) ? chosen : (entities?.[0]?.key ?? '');
   const can = (code: string) => access.access.can(code);
 
   const reset = () => {
@@ -182,15 +199,31 @@ export function ImportWorkspace({ pollMs = pollConfig.ms }: { pollMs?: number })
         <>
           {!batchId ? (
             <>
-              <PrepareStep
-                api={api}
-                entities={entities}
-                canImport={can('onb.imports.import')}
-                onUploaded={(b) => {
-                  setBatch(b);
-                  setBatchId(b.id);
-                }}
-              />
+              {pack ? (
+                <PackPanel
+                  pack={pack}
+                  entities={entities}
+                  canImport={can('onb.imports.import')}
+                  selected={entityKey}
+                  onChoose={(k) => {
+                    setChosen(k);
+                    if (typeof prepare.current?.scrollIntoView === 'function') prepare.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                />
+              ) : null}
+              <div ref={prepare} className="scroll-mt-4">
+                <PrepareStep
+                  api={api}
+                  entities={entities}
+                  entityKey={entityKey}
+                  onEntityChange={setChosen}
+                  canImport={can('onb.imports.import')}
+                  onUploaded={(b) => {
+                    setBatch(b);
+                    setBatchId(b.id);
+                  }}
+                />
+              </div>
               <RecentImports api={api} entities={entities} version={listVersion} onOpen={setBatchId} />
             </>
           ) : !batch ? (

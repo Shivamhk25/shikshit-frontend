@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { createWebSession } from '../../shell/web-session';
 import { ShellApp } from '../../shell/ShellApp';
 import { pollConfig } from './pollConfig';
-import type { BatchStatus, ImportBatch, ImportRow } from './importApi';
+import type { BatchStatus, ImportBatch, ImportPack, ImportRow } from './importApi';
 
 const ALL = ['onb.workspace.view', 'onb.imports.view', 'onb.imports.import', 'onb.imports.commit', 'onb.imports.rollback'];
 
@@ -20,7 +20,62 @@ const ENTITIES = [
       { key: 'name', label: 'Name', required: true, kind: 'text' },
     ],
   },
+  {
+    key: 'academic_years',
+    title: 'Academic years',
+    domain: 'academic',
+    templateVersion: 1,
+    columns: [
+      { key: 'code', label: 'Code', required: true, kind: 'text' },
+      { key: 'name', label: 'Name', required: true, kind: 'text' },
+    ],
+  },
+  {
+    key: 'academic_terms',
+    title: 'Terms',
+    domain: 'academic',
+    templateVersion: 1,
+    columns: [
+      { key: 'code', label: 'Code', required: true, kind: 'text' },
+      { key: 'title', label: 'Title', required: true, kind: 'text' },
+    ],
+  },
+  {
+    key: 'rooms',
+    title: 'Rooms',
+    domain: 'academic',
+    templateVersion: 1,
+    columns: [
+      { key: 'code', label: 'Code', required: true, kind: 'text' },
+      { key: 'name', label: 'Name', required: true, kind: 'text' },
+    ],
+  },
 ];
+
+const step = (entity: string, title: string, order: number, over: Partial<ImportPack['steps'][number]> = {}): ImportPack['steps'][number] => ({
+  entity, title, order, count: 0, state: 'todo', required: false, requires: [], next: false, ...over,
+});
+
+const PACK: ImportPack = {
+  key: 'academic', title: 'Academic structure', domain: 'academic', ready: false,
+  steps: [
+    step('academic_years', 'Academic years', 1, { required: true, next: true }),
+    step('academic_terms', 'Terms', 2, { state: 'waiting', requires: ['academic_years'] }),
+    step('school_divisions', 'School divisions', 3),
+    step('classes', 'Classes', 4, { required: true }),
+    step('rooms', 'Rooms', 5, { count: 6, state: 'done' }),
+  ],
+  rules: [
+    { key: 'current_year', label: 'A current academic year is set', met: false, checked: true },
+    { key: 'class_mappings', label: 'Every class has a section and mapped subjects', met: false, checked: false, detail: 'Checked once class-section and subject-class mappings can be set up.' },
+  ],
+};
+
+const PACK_AFTER: ImportPack = {
+  ...PACK,
+  steps: [step('academic_years', 'Academic years', 1, { required: true, count: 1, state: 'done' }), ...PACK.steps.slice(1).map((s) => (s.entity === 'academic_terms' ? { ...s, state: 'todo' as const } : s)), ],
+  rules: [{ key: 'current_year', label: 'A current academic year is set', met: true, checked: true }, PACK.rules[1]!],
+};
 
 interface Opts {
   /** Rows the file contains, with the verdict the server gives each. */
@@ -28,6 +83,8 @@ interface Opts {
   uploadError?: { status: number; code: string; detail?: string; errors?: { field: string; code: string; message: string }[] };
   commitError?: { status: number; code: string; detail: string };
   existing?: ImportBatch[];
+  /** The pack the server describes; absent means the caller has no access to it (404). */
+  pack?: ImportPack;
 }
 
 /** A fake of the real contract: cookie session, /me/access, and the /onboarding operations with background progress. */
@@ -40,6 +97,7 @@ function fakeServer(permissions: string[], opts: Opts = {}) {
   const errors = rows.filter((r) => r.status === 'error').length;
   const ready = rows.length - errors;
   let batch: ImportBatch | null = null;
+  let committed = false;
   let polls = 0;
   let waits = 0; // polls seen since the last commit or rollback: the work takes a few polls, as on a real server
   const json = (status: number, body: unknown, h: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...h } });
@@ -82,6 +140,7 @@ function fakeServer(permissions: string[], opts: Opts = {}) {
       }, { 'X-Access-Version': '1' });
     }
     if (path === '/onboarding/entities') return json(200, { items: ENTITIES });
+    if (path === '/onboarding/packs/academic') return opts.pack ? json(200, committed ? PACK_AFTER : opts.pack) : problem(404, { code: 'not_found' });
     if (path === '/onboarding/templates/school_divisions') return new Response('Code,Name\nPRI,Primary\n', { status: 200, headers: { 'Content-Type': 'text/csv' } });
     if (path === '/onboarding/imports' && method === 'POST') {
       if (opts.uploadError) return problem(opts.uploadError.status, opts.uploadError);
@@ -114,6 +173,7 @@ function fakeServer(permissions: string[], opts: Opts = {}) {
       if (sub === '/commit' && method === 'POST') {
         if (opts.commitError) return problem(opts.commitError.status, opts.commitError);
         waits = 0;
+        committed = true;
         setStatus('committing');
         return json(202, batch);
       }
@@ -288,5 +348,68 @@ describe('import workspace', () => {
     expect(screen.getByText(/School divisions · 2 rows · 20 Nov 2026/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Open last-term.csv' }));
     expect(await screen.findByText('2 rows imported.')).toBeInTheDocument();
+  });
+
+  describe('academic setup checklist', () => {
+    it('lists the steps in order with what each has and what to do next', async () => {
+      mount(ALL, { pack: PACK });
+      const panel = await screen.findByRole('region', { name: 'Academic structure setup' });
+      const text = panel.querySelector('ol')!.textContent ?? '';
+      const at = ['Academic years', 'Terms', 'School divisions', 'Classes', 'Rooms'].map((t) => text.indexOf(t));
+      expect(at.every((n) => n >= 0)).toBe(true);
+      expect([...at].sort((x, y) => x - y)).toEqual(at);
+      expect(within(panel).getByText('0 of 2 required steps have data.')).toBeInTheDocument();
+      expect(within(panel).getByText('Not ready yet')).toBeInTheDocument();
+      expect(within(panel).getByText('Next')).toBeInTheDocument();
+      expect(within(panel).getByText('Needs academic years first')).toBeInTheDocument();
+      expect(within(panel).getByText('6 records')).toBeInTheDocument();
+      expect(within(panel).getByText('Optional, not started')).toBeInTheDocument();
+      expect(within(panel).getByText(/Checked once class-section and subject-class mappings/)).toBeInTheDocument();
+      expect(within(panel).getByText(/not marked ready until every rule can be checked/)).toBeInTheDocument();
+    });
+
+    it('picks the step in the form when its Import button is used', async () => {
+      mount(ALL, { pack: PACK });
+      const panel = await screen.findByRole('region', { name: 'Academic structure setup' });
+      expect(screen.getByLabelText('What are you importing?')).toHaveValue('school_divisions');
+      await userEvent.click(within(panel).getByRole('button', { name: 'Import more rooms' }));
+      expect(screen.getByLabelText('What are you importing?')).toHaveValue('rooms');
+      await userEvent.click(within(panel).getByRole('button', { name: 'Import academic years' }));
+      expect(screen.getByLabelText('What are you importing?')).toHaveValue('academic_years');
+    });
+
+    it('does not offer a step that is waiting for an earlier one, or a step the caller cannot import', async () => {
+      mount(ALL, { pack: PACK });
+      const panel = await screen.findByRole('region', { name: 'Academic structure setup' });
+      expect(within(panel).getByRole('button', { name: 'Import terms' })).toBeDisabled();
+      // classes are not in this caller's importable list, so the step has no button
+      expect(within(panel).queryByRole('button', { name: /classes/i })).not.toBeInTheDocument();
+    });
+
+    it('disables the step buttons without the import permission', async () => {
+      mount(['onb.workspace.view', 'onb.imports.view'], { pack: PACK });
+      const panel = await screen.findByRole('region', { name: 'Academic structure setup' });
+      expect(within(panel).getByRole('button', { name: 'Import academic years' })).toBeDisabled();
+    });
+
+    it('shows nothing when the caller has no access to the pack', async () => {
+      mount(ALL);
+      await screen.findByRole('heading', { name: 'Import data' });
+      await screen.findByLabelText('What are you importing?');
+      expect(screen.queryByRole('region', { name: 'Academic structure setup' })).not.toBeInTheDocument();
+    });
+
+    it('refreshes after an import, so the year is done and terms open up', async () => {
+      mount(ALL, { pack: PACK });
+      await screen.findByRole('region', { name: 'Academic structure setup' });
+      await upload();
+      await userEvent.click(await screen.findByRole('button', { name: 'Import 2 rows' }, { timeout: 4000 }));
+      await screen.findByText('2 rows imported.', undefined, { timeout: 4000 });
+      await userEvent.click(screen.getByRole('button', { name: 'Done' }));
+      const panel = await screen.findByRole('region', { name: 'Academic structure setup' });
+      await waitFor(() => expect(within(panel).getByText('1 record')).toBeInTheDocument());
+      expect(within(panel).queryByText('Needs academic years first')).not.toBeInTheDocument();
+      expect(within(panel).getByText('1 of 2 required steps have data.')).toBeInTheDocument();
+    });
   });
 });

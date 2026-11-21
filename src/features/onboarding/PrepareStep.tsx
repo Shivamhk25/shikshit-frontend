@@ -25,8 +25,7 @@ function Choice<T extends string>({ legend, options, value, onChange }: { legend
 }
 
 /** Choose what to import and how, then pick the file. Checking the file starts as soon as it is uploaded. */
-export function PrepareStep({ api, entities, canImport, onUploaded }: { api: ImportApi; entities: ImportEntity[]; canImport: boolean; onUploaded: (b: ImportBatch) => void }) {
-  const [entityKey, setEntityKey] = useState(entities[0]?.key ?? '');
+export function PrepareStep({ api, entities, canImport, onUploaded, entityKey, onEntityChange }: { api: ImportApi; entities: ImportEntity[]; canImport: boolean; onUploaded: (b: ImportBatch) => void; entityKey: string; onEntityChange: (key: string) => void }) {
   const [strategy, setStrategy] = useState<Strategy>('upsert');
   const [commitMode, setCommitMode] = useState<CommitMode>('all_or_nothing');
   const [file, setFile] = useState<File | null>(null);
@@ -88,7 +87,7 @@ export function PrepareStep({ api, entities, canImport, onUploaded }: { api: Imp
           <label htmlFor={selectId} className="text-sm font-medium text-fg">
             What are you importing?
           </label>
-          <select id={selectId} value={entityKey} onChange={(e) => setEntityKey(e.target.value)} className="h-10 w-full rounded-md border border-line bg-surface px-3 text-base text-fg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring">
+          <select id={selectId} value={entityKey} onChange={(e) => onEntityChange(e.target.value)} className="h-10 w-full rounded-md border border-line bg-surface px-3 text-base text-fg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring">
             {entities.map((e) => (
               <option key={e.key} value={e.key}>
                 {e.title}
