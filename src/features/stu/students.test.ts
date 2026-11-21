@@ -14,8 +14,12 @@ describe('student descriptors', () => {
     for (const d of all) expect(paths).toContain(d.endpoint);
   });
 
-  it('students are the pages only the institute-wide roles are offered, and carry no mobile route yet', () => {
-    for (const id of ['students', 'student_enrollments', 'guardians', 'student_guardians', 'student_addresses']) {
+  it('the phone reads students, enrollments and parents; guardians on their own and addresses stay on the web', () => {
+    for (const id of ['students', 'student_enrollments', 'student_guardians']) {
+      expect(registry[id]).toMatchObject({ module: 'stu', parity: 'Companion' });
+      expect(registry[id].mobile?.route).toBe(registry[id].web?.path);
+    }
+    for (const id of ['guardians', 'student_addresses']) {
       expect(registry[id]).toMatchObject({ module: 'stu', parity: 'Web-only' });
       expect(registry[id].mobile).toBeUndefined();
     }
