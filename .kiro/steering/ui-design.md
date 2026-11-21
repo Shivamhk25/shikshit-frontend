@@ -7,7 +7,7 @@ fileMatchPattern: ["src/**/*.tsx", "src/**/*.css", "src/design-system/**", "src/
 
 Shikshit is a classic, premium school system. It should feel like a well-bound register: calm, exact and trustworthy.
 Never copy another product's layout, colours, icons, wording, name or logo. The functional research in the docs repo
-(`docs/pie360-audit`) says **what** a screen must do; it is never a visual reference.
+(the functional audit in `shikshit-docs`) says **what** a screen must do; it is never a visual reference.
 
 ## Use what exists, in this order
 1. `src/design-system`: `Button` (variants primary, secondary, ghost, danger, destructive; sizes sm, md, lg),
