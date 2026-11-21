@@ -61,6 +61,34 @@ export interface ImportRow {
   problems: ImportProblem[];
 }
 
+export interface PackStep {
+  entity: string;
+  title: string;
+  order: number;
+  count: number;
+  state: 'done' | 'todo' | 'waiting';
+  required: boolean;
+  requires: string[];
+  next: boolean;
+}
+
+export interface PackRule {
+  key: string;
+  label: string;
+  met: boolean;
+  checked: boolean;
+  detail?: string;
+}
+
+export interface ImportPack {
+  key: string;
+  title: string;
+  domain: string;
+  ready: boolean;
+  steps: PackStep[];
+  rules: PackRule[];
+}
+
 export interface Paged<T> {
   items: T[];
   total: number;
@@ -100,6 +128,9 @@ export function createImportApi(session: Pick<Session, 'fetch'>, base: string) {
   return {
     async entities(): Promise<ImportEntity[]> {
       return (await json<{ items: ImportEntity[] }>('/entities')).items;
+    },
+    pack(key: string): Promise<ImportPack> {
+      return json<ImportPack>(`/packs/${encodeURIComponent(key)}`);
     },
     template(entity: string): Promise<Blob> {
       return call(`/templates/${encodeURIComponent(entity)}`).then((r) => r.blob());
