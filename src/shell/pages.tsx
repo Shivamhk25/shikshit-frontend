@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useAccessState } from './AccessProvider';
 import { permissionForPath } from './registry';
+import { ImportWorkspace } from '../features/onboarding/ImportWorkspace';
 
 export function HomePage() {
   const a = useAccessState();
@@ -25,6 +26,8 @@ export function ProfilePage() {
 }
 
 export function OnboardingPage() {
+  const a = useAccessState();
+  if (a.phase === 'ready' && a.access.can('onb.imports.view')) return <ImportWorkspace />;
   return (
     <section className="space-y-2">
       <h1 className="text-2xl font-semibold text-fg">Onboarding</h1>
