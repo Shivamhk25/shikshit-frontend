@@ -30,6 +30,7 @@ export const STATUS_LABEL: Record<BatchStatus, string> = {
   rolling_back: 'Rolling back',
   rolled_back: 'Rolled back',
   failed: 'Failed',
+  rejected: 'Rejected',
 };
 
 export const ROW_LABEL: Record<RowStatus, string> = {

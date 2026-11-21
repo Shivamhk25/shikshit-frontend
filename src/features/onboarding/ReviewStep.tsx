@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { ApiError } from '../../crud/client';
 import { Button, cx } from '../../design-system';
 import { ROW_LABEL, saveBlob } from './format';
-import type { ImportApi, ImportBatch, ImportEntity, ImportRow, RowStatus } from './importApi';
+import { waitingForApproval, type ImportApi, type ImportBatch, type ImportEntity, type ImportRow, type RowStatus } from './importApi';
 
 const PAGE_SIZE = 25;
 
@@ -151,6 +151,8 @@ export function ReviewStep({
   batch,
   entity,
   canCommit,
+  canReview,
+  userId,
   onChange,
   refresh,
   onStartOver,
@@ -159,6 +161,8 @@ export function ReviewStep({
   batch: ImportBatch;
   entity: ImportEntity | undefined;
   canCommit: boolean;
+  canReview: boolean;
+  userId: string;
   onChange: (b: ImportBatch) => void;
   refresh: () => Promise<ImportBatch | null>;
   onStartOver: () => void;
@@ -166,6 +170,9 @@ export function ReviewStep({
   const [filter, setFilter] = useState<Filter>('all');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState('');
+  const reasonId = useId();
 
   if (batch.status !== 'validated') {
     return (
@@ -185,6 +192,27 @@ export function ReviewStep({
     try {
       onChange(await api.commit(batch.id));
       void refresh();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Something went wrong. Please try again.');
+      setBusy(false);
+    }
+  };
+  const approve = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      onChange(await api.approve(batch.id));
+      void refresh();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Something went wrong. Please try again.');
+      setBusy(false);
+    }
+  };
+  const reject = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      onChange(await api.reject(batch.id, reason.trim()));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Something went wrong. Please try again.');
       setBusy(false);
@@ -265,13 +293,119 @@ export function ReviewStep({
           {error}
         </p>
       ) : null}
-      <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
-        <Button onClick={() => void commit()} disabled={blocked || ready === 0 || !canCommit} loading={busy}>
-          {ready === 1 ? 'Import 1 row' : `Import ${ready} rows`}
-        </Button>
-        {!canCommit ? <p className="text-sm text-fg-muted">You can review this file, but only someone with import approval can import it.</p> : null}
-        {canCommit && ready === 0 ? <p className="text-sm text-fg-muted">No row is ready to import.</p> : null}
-      </div>
+      {batch.approvalRequired ? (
+        <ApprovalFooter
+          batch={batch}
+          ready={ready}
+          blocked={blocked}
+          mine={batch.createdBy !== null && batch.createdBy === userId}
+          canReview={canReview}
+          busy={busy}
+          rejecting={rejecting}
+          reason={reason}
+          reasonId={reasonId}
+          onReason={setReason}
+          onApprove={() => void approve()}
+          onStartReject={() => setRejecting(true)}
+          onCancelReject={() => {
+            setRejecting(false);
+            setReason('');
+          }}
+          onReject={() => void reject()}
+        />
+      ) : (
+        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
+          <Button onClick={() => void commit()} disabled={blocked || ready === 0 || !canCommit} loading={busy}>
+            {ready === 1 ? 'Import 1 row' : `Import ${ready} rows`}
+          </Button>
+          {!canCommit ? <p className="text-sm text-fg-muted">You can review this file, but only someone with import approval can import it.</p> : null}
+          {canCommit && ready === 0 ? <p className="text-sm text-fg-muted">No row is ready to import.</p> : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * What happens to a file that needs approval. The person who uploaded it can only wait; someone else with review
+ * rights approves it (which imports it) or rejects it with a reason. The server enforces all of this again.
+ */
+function ApprovalFooter({
+  batch,
+  ready,
+  blocked,
+  mine,
+  canReview,
+  busy,
+  rejecting,
+  reason,
+  reasonId,
+  onReason,
+  onApprove,
+  onStartReject,
+  onCancelReject,
+  onReject,
+}: {
+  batch: ImportBatch;
+  ready: number;
+  blocked: boolean;
+  mine: boolean;
+  canReview: boolean;
+  busy: boolean;
+  rejecting: boolean;
+  reason: string;
+  reasonId: string;
+  onReason: (v: string) => void;
+  onApprove: () => void;
+  onStartReject: () => void;
+  onCancelReject: () => void;
+  onReject: () => void;
+}) {
+  if (!waitingForApproval(batch)) return null;
+  return (
+    <div className="flex flex-col gap-3 border-t border-line pt-4">
+      <p className="m-0 font-medium text-fg">Waiting for approval</p>
+      {mine ? (
+        <p className="m-0 text-sm text-fg-muted">You uploaded this file, so an admin or principal other than you has to approve it before it is imported. You can leave this page; it will stay here.</p>
+      ) : canReview ? (
+        <p className="m-0 text-sm text-fg-muted">Approving imports the file straight away. Rejecting sends your reason back to the person who uploaded it.</p>
+      ) : (
+        <p className="m-0 text-sm text-fg-muted">An admin or principal has to approve this file before it is imported.</p>
+      )}
+
+      {canReview && !mine ? (
+        rejecting ? (
+          <div className="flex max-w-xl flex-col gap-2">
+            <label htmlFor={reasonId} className="text-sm font-medium text-fg">
+              Why are you rejecting it?
+            </label>
+            <textarea
+              id={reasonId}
+              value={reason}
+              maxLength={500}
+              onChange={(e) => onReason(e.target.value)}
+              className="min-h-20 rounded-md border border-line bg-surface px-3 py-2 font-[inherit] text-base text-fg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+            />
+            <div className="flex gap-2">
+              <Button variant="danger" onClick={onReject} disabled={reason.trim() === ''} loading={busy}>
+                Reject file
+              </Button>
+              <Button variant="ghost" onClick={onCancelReject}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button onClick={onApprove} disabled={blocked || ready === 0} loading={busy}>
+              {ready === 1 ? 'Approve and import 1 row' : `Approve and import ${ready} rows`}
+            </Button>
+            <Button variant="secondary" onClick={onStartReject}>
+              Reject…
+            </Button>
+          </div>
+        )
+      ) : null}
     </div>
   );
 }

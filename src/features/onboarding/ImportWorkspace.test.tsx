@@ -85,6 +85,9 @@ interface Opts {
   existing?: ImportBatch[];
   /** The pack the server describes; absent means the caller has no access to it (404). */
   pack?: ImportPack;
+  /** The institute requires approval; `uploader` says whether the signed-in user (u1) or someone else (u2) uploaded the file. */
+  approval?: { uploader: 'me' | 'other' };
+  approveError?: { status: number; code: string; detail: string };
 }
 
 /** A fake of the real contract: cookie session, /me/access, and the /onboarding operations with background progress. */
@@ -104,7 +107,8 @@ function fakeServer(permissions: string[], opts: Opts = {}) {
   const problem = (status: number, body: Record<string, unknown>) => json(status, { status, ...body });
   const mk = (over: Partial<ImportBatch>): ImportBatch => ({
     id: 'b1', entity: 'school_divisions', strategy: 'upsert', commitMode: 'all_or_nothing', status: 'uploaded', fileName: 'x.csv', totalRows: rows.length, validRows: 0, warningRows: 0,
-    errorRows: 0, committedRows: 0, revertedRows: 0, progressDone: 0, progressTotal: rows.length, failure: null, createdAt: '2026-11-21T10:00:00Z', committedAt: null, rollbackDeadline: null, ...over,
+    errorRows: 0, committedRows: 0, revertedRows: 0, progressDone: 0, progressTotal: rows.length, failure: null, createdAt: '2026-11-21T10:00:00Z', createdBy: opts.approval?.uploader === 'other' ? 'u2' : 'u1',
+    approvalRequired: Boolean(opts.approval), approvedAt: null, rejectReason: null, committedAt: null, rollbackDeadline: null, ...over,
   });
   const setStatus = (s: BatchStatus) => {
     if (!batch) return;
@@ -176,6 +180,21 @@ function fakeServer(permissions: string[], opts: Opts = {}) {
         committed = true;
         setStatus('committing');
         return json(202, batch);
+      }
+      if (sub === '/approve' && method === 'POST') {
+        if (opts.approveError) return problem(opts.approveError.status, opts.approveError);
+        if (batch.createdBy === 'u1') return problem(409, { code: 'conflict', detail: 'You uploaded this file, so someone else has to approve it.' });
+        waits = 0;
+        committed = true;
+        batch = { ...batch, approvedAt: '2026-11-21T11:00:00Z' };
+        setStatus('committing');
+        return json(202, batch);
+      }
+      if (sub === '/reject' && method === 'POST') {
+        const reason = String(JSON.parse(String(init?.body)).reason ?? '').trim();
+        if (!reason) return problem(400, { code: 'validation_failed', errors: [{ field: 'reason', code: 'required', message: 'Enter a reason.' }] });
+        batch = { ...batch, status: 'rejected', rejectReason: reason };
+        return json(200, batch);
       }
       if (sub === '/rollback' && method === 'POST') {
         waits = 0;
@@ -341,7 +360,7 @@ describe('import workspace', () => {
   it('reopens an earlier file from the recent list', async () => {
     const earlier: ImportBatch = {
       id: 'old', entity: 'school_divisions', strategy: 'upsert', commitMode: 'all_or_nothing', status: 'committed', fileName: 'last-term.csv', totalRows: 2, validRows: 2, warningRows: 0, errorRows: 0,
-      committedRows: 2, revertedRows: 0, progressDone: 2, progressTotal: 2, failure: null, createdAt: '2026-11-20T10:00:00Z', committedAt: '2026-11-20T10:05:00Z', rollbackDeadline: '2026-11-27T10:05:00Z',
+      committedRows: 2, revertedRows: 0, progressDone: 2, progressTotal: 2, failure: null, createdAt: '2026-11-20T10:00:00Z', committedAt: '2026-11-20T10:05:00Z', rollbackDeadline: '2026-11-27T10:05:00Z', createdBy: 'u1', approvalRequired: false, approvedAt: null, rejectReason: null,
     };
     mount(ALL, { existing: [earlier] });
     expect(await screen.findByText('last-term.csv')).toBeInTheDocument();
@@ -410,6 +429,93 @@ describe('import workspace', () => {
       await waitFor(() => expect(within(panel).getByText('1 record')).toBeInTheDocument());
       expect(within(panel).queryByText('Needs academic years first')).not.toBeInTheDocument();
       expect(within(panel).getByText('1 of 2 required steps have data.')).toBeInTheDocument();
+    });
+  });
+
+  describe('approval before import', () => {
+    const REVIEW = [...ALL, 'onb.imports.review'];
+
+    it('makes the uploader wait: no import button, and a clear explanation', async () => {
+      mount(REVIEW, { approval: { uploader: 'me' } });
+      await upload();
+      expect(await screen.findByText('Waiting for approval', undefined, { timeout: 4000 })).toBeInTheDocument();
+      expect(screen.getByText(/You uploaded this file, so an admin or principal other than you has to approve it/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Import \d+ rows?$/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Approve and import/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Reject/ })).not.toBeInTheDocument();
+    });
+
+    it('lets someone else approve, which imports the file', async () => {
+      const server = mount(REVIEW, { approval: { uploader: 'other' }, existing: [] });
+      await upload();
+      await userEvent.click(await screen.findByRole('button', { name: 'Approve and import 2 rows' }, { timeout: 4000 }));
+      expect(await screen.findByText('2 rows imported.', undefined, { timeout: 4000 })).toBeInTheDocument();
+      expect(server.calls.some((c) => c.path.endsWith('/approve') && c.method === 'POST')).toBe(true);
+      expect(server.calls.some((c) => c.path.endsWith('/commit'))).toBe(false);
+    });
+
+    it('rejects with a reason, shows it, and stops asking the server', async () => {
+      const server = mount(REVIEW, { approval: { uploader: 'other' } });
+      await upload();
+      await userEvent.click(await screen.findByRole('button', { name: 'Reject…' }, { timeout: 4000 }));
+      const send = screen.getByRole('button', { name: 'Reject file' });
+      expect(send).toBeDisabled(); // a reason is required
+      await userEvent.type(screen.getByLabelText('Why are you rejecting it?'), 'Wrong academic year.');
+      await userEvent.click(send);
+      expect(await screen.findByText('This file was rejected. Nothing was imported.')).toBeInTheDocument();
+      expect(screen.getByText('Wrong academic year.')).toBeInTheDocument();
+      const polls = () => server.calls.filter((c) => c.path === '/onboarding/imports/b1').length;
+      const before = polls();
+      await new Promise((r) => setTimeout(r, 120));
+      expect(polls()).toBe(before); // a rejected file is final, so polling has stopped
+    });
+
+    it('can cancel a rejection without sending anything', async () => {
+      const server = mount(REVIEW, { approval: { uploader: 'other' } });
+      await upload();
+      await userEvent.click(await screen.findByRole('button', { name: 'Reject…' }, { timeout: 4000 }));
+      await userEvent.type(screen.getByLabelText('Why are you rejecting it?'), 'x');
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(screen.getByRole('button', { name: 'Approve and import 2 rows' })).toBeInTheDocument();
+      expect(server.calls.some((c) => c.path.endsWith('/reject'))).toBe(false);
+    });
+
+    it('tells someone without review rights that approval is needed, and offers nothing', async () => {
+      mount(ALL, { approval: { uploader: 'other' } });
+      await upload();
+      expect(await screen.findByText('An admin or principal has to approve this file before it is imported.', undefined, { timeout: 4000 })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Approve and import/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Reject/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Import \d+ rows?$/ })).not.toBeInTheDocument();
+    });
+
+    it('does not offer approval for a file with errors that must all be valid, but still allows rejecting', async () => {
+      mount(REVIEW, { approval: { uploader: 'other' }, rows: BAD_ROWS });
+      await upload();
+      const approve = await screen.findByRole('button', { name: 'Approve and import 1 row' }, { timeout: 4000 });
+      expect(approve).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Reject…' })).toBeEnabled();
+    });
+
+    it('shows the server reason when an approval is refused', async () => {
+      mount(REVIEW, { approval: { uploader: 'other' }, approveError: { status: 409, code: 'conflict', detail: 'This file was just rejected.' } });
+      await upload();
+      await userEvent.click(await screen.findByRole('button', { name: 'Approve and import 2 rows' }, { timeout: 4000 }));
+      expect(await screen.findByText('This file was just rejected.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Approve and import 2 rows' })).toBeEnabled();
+    });
+
+    it('labels a waiting file in the recent list and reopens it for the approver', async () => {
+      const waiting: ImportBatch = {
+        id: 'w1', entity: 'school_divisions', strategy: 'upsert', commitMode: 'all_or_nothing', status: 'validated', fileName: 'waiting.csv', totalRows: 2, validRows: 2, warningRows: 0, errorRows: 0,
+        committedRows: 0, revertedRows: 0, progressDone: 0, progressTotal: 2, failure: null, createdAt: '2026-11-20T10:00:00Z', committedAt: null, rollbackDeadline: null, createdBy: 'u2',
+        approvalRequired: true, approvedAt: null, rejectReason: null,
+      };
+      mount(REVIEW, { existing: [waiting], approval: { uploader: 'other' } });
+      expect(await screen.findByText('waiting.csv')).toBeInTheDocument();
+      expect(screen.getByText('Waiting for approval')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Open waiting.csv' }));
+      expect(await screen.findByRole('button', { name: 'Approve and import 2 rows' })).toBeEnabled();
     });
   });
 });

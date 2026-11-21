@@ -3,7 +3,7 @@ import type { Session } from '@shikshit/shared/session';
 
 export type Strategy = 'insert' | 'update' | 'upsert';
 export type CommitMode = 'all_or_nothing' | 'skip_invalid';
-export type BatchStatus = 'uploaded' | 'validating' | 'validated' | 'committing' | 'committed' | 'rolling_back' | 'rolled_back' | 'failed';
+export type BatchStatus = 'uploaded' | 'validating' | 'validated' | 'committing' | 'committed' | 'rolling_back' | 'rolled_back' | 'failed' | 'rejected';
 export type RowStatus = 'pending' | 'valid' | 'warning' | 'error' | 'committed' | 'skipped' | 'reverted' | 'revert_failed';
 
 export interface ImportColumn {
@@ -48,8 +48,13 @@ export interface ImportBatch {
   progressTotal: number;
   failure: string | null;
   createdAt: string;
+  createdBy: string | null;
   committedAt: string | null;
   rollbackDeadline: string | null;
+  /** Fixed at upload. While true and `approvedAt` is empty, the file waits for someone other than its uploader. */
+  approvalRequired: boolean;
+  approvedAt: string | null;
+  rejectReason: string | null;
   fileProblems?: ImportProblem[];
 }
 
@@ -95,7 +100,12 @@ export interface Paged<T> {
 }
 
 /** Statuses after which a batch stops changing by itself, so polling can stop. */
-export const SETTLED: BatchStatus[] = ['validated', 'committed', 'rolled_back', 'failed'];
+export const SETTLED: BatchStatus[] = ['validated', 'committed', 'rolled_back', 'failed', 'rejected'];
+
+/** A checked file that must be approved by someone else before it is imported. */
+export function waitingForApproval(b: ImportBatch): boolean {
+  return b.status === 'validated' && b.approvalRequired && !b.approvedAt;
+}
 
 async function toError(res: Response): Promise<ApiError> {
   let p: { code?: string; detail?: string; errors?: { field: string; message: string }[] } = {};
@@ -161,6 +171,12 @@ export function createImportApi(session: Pick<Session, 'fetch'>, base: string) {
     },
     commit(id: string): Promise<ImportBatch> {
       return json<ImportBatch>(`/imports/${encodeURIComponent(id)}/commit`, { method: 'POST' });
+    },
+    approve(id: string): Promise<ImportBatch> {
+      return json<ImportBatch>(`/imports/${encodeURIComponent(id)}/approve`, { method: 'POST' });
+    },
+    reject(id: string, reason: string): Promise<ImportBatch> {
+      return json<ImportBatch>(`/imports/${encodeURIComponent(id)}/reject`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) });
     },
     rollback(id: string): Promise<ImportBatch> {
       return json<ImportBatch>(`/imports/${encodeURIComponent(id)}/rollback`, { method: 'POST' });

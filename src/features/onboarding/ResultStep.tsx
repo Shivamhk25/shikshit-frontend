@@ -51,6 +51,22 @@ export function ResultStep({
     );
   }
 
+  if (batch.status === 'rejected') {
+    return (
+      <div className="space-y-4 rounded-xl border border-line bg-surface p-8" role="status">
+        <p className="m-0 text-lg font-medium text-fg">This file was rejected. Nothing was imported.</p>
+        {batch.rejectReason ? (
+          <p className="m-0 text-fg">
+            <span className="text-fg-muted">Reason: </span>
+            {batch.rejectReason}
+          </p>
+        ) : null}
+        <p className="m-0 text-sm text-fg-muted">Correct the data and upload the file again.</p>
+        <Button onClick={onDone}>Back to imports</Button>
+      </div>
+    );
+  }
+
   if (batch.status === 'failed') {
     return (
       <div className="space-y-4 rounded-xl border border-danger-line bg-danger-bg p-8" role="alert">
