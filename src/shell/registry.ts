@@ -19,6 +19,10 @@ export const registry = defineRegistry([
   { screenId: 'holidays', title: 'Holidays', permission: 'aca.holiday_calendars.view', module: 'aca', parity: 'Companion', web: { path: '/holidays' }, mobile: { route: '/holidays' } },
   { screenId: 'calendar_events', title: 'Academic calendar', permission: 'aca.academic_calendars.view', module: 'aca', parity: 'Companion', web: { path: '/calendar-events' }, mobile: { route: '/calendar-events' } },
   { screenId: 'elective_groups', title: 'Elective groups', permission: 'aca.elective_groups.view', module: 'aca', parity: 'Companion', web: { path: '/elective-groups' }, mobile: { route: '/elective-groups' } },
+  { screenId: 'class_section_mappings', title: 'Class sections', permission: 'aca.class_section_mappings.view', module: 'aca', parity: 'Companion', web: { path: '/class-section-mappings' }, mobile: { route: '/class-section-mappings' } },
+  { screenId: 'subject_class_mappings', title: 'Class subjects', permission: 'aca.subject_class_mappings.view', module: 'aca', parity: 'Companion', web: { path: '/subject-class-mappings' }, mobile: { route: '/subject-class-mappings' } },
+  { screenId: 'textbooks', title: 'Textbooks', permission: 'aca.textbooks.view', module: 'aca', parity: 'Companion', web: { path: '/textbooks' }, mobile: { route: '/textbooks' } },
+  { screenId: 'textbook_chapters', title: 'Textbook chapters', permission: 'aca.textbook_chapters.view', module: 'aca', parity: 'Companion', web: { path: '/textbook-chapters' }, mobile: { route: '/textbook-chapters' } },
   { screenId: 'profile', title: 'Profile', parity: 'Both', web: { path: '/profile' }, mobile: { route: '/profile' } },
 ]);
 

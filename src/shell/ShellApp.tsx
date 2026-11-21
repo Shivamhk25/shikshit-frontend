@@ -7,6 +7,7 @@ import { HomePage, NotAvailablePage, OnboardingPage, ProfilePage, RequirePermiss
 import { SignInPage } from './SignInPage';
 import { RoomsPage } from '../features/aca/RoomsPage';
 import { ResourcePage } from '../features/aca/ResourcePage';
+import { chaptersDescriptor, classSectionsDescriptor, subjectClassesDescriptor, textbooksDescriptor } from '../features/aca/mappings';
 import { campusesDescriptor, divisionsDescriptor, electivesDescriptor, eventsDescriptor, holidaysDescriptor } from '../features/aca/masters';
 import { classesDescriptor, sectionsDescriptor, subjectsDescriptor, termsDescriptor, yearsDescriptor } from '../features/aca/structure';
 
@@ -119,6 +120,38 @@ function Gate() {
             element={
               <RequirePermission path="/elective-groups">
                 <ResourcePage descriptor={electivesDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="class-section-mappings"
+            element={
+              <RequirePermission path="/class-section-mappings">
+                <ResourcePage descriptor={classSectionsDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="subject-class-mappings"
+            element={
+              <RequirePermission path="/subject-class-mappings">
+                <ResourcePage descriptor={subjectClassesDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="textbooks"
+            element={
+              <RequirePermission path="/textbooks">
+                <ResourcePage descriptor={textbooksDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="textbook-chapters"
+            element={
+              <RequirePermission path="/textbook-chapters">
+                <ResourcePage descriptor={chaptersDescriptor} />
               </RequirePermission>
             }
           />
