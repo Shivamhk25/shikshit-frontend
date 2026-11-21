@@ -4,7 +4,7 @@ import { Button, cx } from '../../design-system';
 import { useAccessState } from '../../shell/AccessProvider';
 import { useAuth } from '../../shell/AuthProvider';
 import { API_BASE } from '../../shell/web-session';
-import { createImportApi, SETTLED, type ImportApi, type ImportBatch, type ImportEntity, type ImportPack } from './importApi';
+import { createImportApi, SETTLED, waitingForApproval, type ImportApi, type ImportBatch, type ImportEntity, type ImportPack } from './importApi';
 import { PackPanel } from './PackPanel';
 import { STATUS_LABEL, formatDate } from './format';
 import { pollConfig } from './pollConfig';
@@ -108,7 +108,7 @@ function RecentImports({ api, entities, onOpen, version }: { api: ImportApi; ent
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <span className="rounded-full bg-subtle px-2.5 py-0.5 text-xs font-medium text-fg-muted">{STATUS_LABEL[b.status]}</span>
+              <span className="rounded-full bg-subtle px-2.5 py-0.5 text-xs font-medium text-fg-muted">{waitingForApproval(b) ? 'Waiting for approval' : STATUS_LABEL[b.status]}</span>
               <Button variant="secondary" size="sm" onClick={() => onOpen(b.id)} aria-label={`Open ${b.fileName}`}>
                 Open
               </Button>
@@ -240,7 +240,17 @@ export function ImportWorkspace({ pollMs = pollConfig.ms }: { pollMs?: number })
               </p>
             )
           ) : step === 1 ? (
-            <ReviewStep api={api} batch={batch} entity={entities.find((e) => e.key === batch.entity)} canCommit={can('onb.imports.commit')} onChange={setBatch} refresh={refresh} onStartOver={reset} />
+            <ReviewStep
+              api={api}
+              batch={batch}
+              entity={entities.find((e) => e.key === batch.entity)}
+              canCommit={can('onb.imports.commit')}
+              canReview={can('onb.imports.review')}
+              userId={access.payload.user.id}
+              onChange={setBatch}
+              refresh={refresh}
+              onStartOver={reset}
+            />
           ) : (
             <ResultStep api={api} batch={batch} entity={entities.find((e) => e.key === batch.entity)} canRollback={can('onb.imports.rollback')} onChange={setBatch} refresh={refresh} onDone={reset} />
           )}
