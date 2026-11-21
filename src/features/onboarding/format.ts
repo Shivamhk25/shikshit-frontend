@@ -11,9 +11,9 @@ export function formatDate(iso: string | null | undefined): string {
 }
 
 export const STRATEGIES: { value: Strategy; label: string; hint: string }[] = [
-  { value: 'upsert', label: 'Add new and update existing', hint: 'Rows are matched by code. A match is updated, anything else is added.' },
+  { value: 'upsert', label: 'Add new and update existing', hint: 'Each row is matched to an existing record by its code, or by its key columns (for example year, class and section). A match is updated, anything else is added.' },
   { value: 'insert', label: 'Add new only', hint: 'A row whose code already exists is flagged instead of changed.' },
-  { value: 'update', label: 'Update existing only', hint: 'A row with an unknown code is flagged. A blank optional cell clears that field.' },
+  { value: 'update', label: 'Update existing only', hint: 'A row that matches nothing is flagged. A blank cell, or a column left out of the file, keeps the current value.' },
 ];
 
 export const COMMIT_MODES: { value: CommitMode; label: string; hint: string }[] = [
