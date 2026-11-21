@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Circle, LogOut, Menu, X } from 'lucide-react';
+import * as Tooltip from '@radix-ui/react-tooltip';
+import { Circle, LogOut, Menu, Search, X } from 'lucide-react';
+import { Toaster } from 'sonner';
 import { buildNavigation, type NavNode } from '@shikshit/shared/access';
 import { Button, Logo, ThemeProvider, cx } from '../design-system';
 import { useAccessState } from './AccessProvider';
 import { useAuth } from './AuthProvider';
+import { CommandPalette } from './CommandPalette';
 import { NAV_ICONS } from './navIcons';
 import { registry } from './registry';
 
@@ -52,12 +55,35 @@ function NavItems({ nodes, depth = 0 }: { nodes: NavNode[]; depth?: number }) {
   );
 }
 
-function Sidebar({ nav, tenantName, userName, onSignOut }: { nav: NavNode[]; tenantName: string; userName: string; onSignOut: () => void }) {
+function Hint({ label, children }: { label: string; children: ReactElement }) {
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>{children}</Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content side="top" sideOffset={6} className="z-50 rounded-md bg-brand-ink-deep px-2.5 py-1.5 text-xs font-medium text-white shadow-card">
+          {label}
+          <Tooltip.Arrow className="fill-brand-ink-deep" />
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  );
+}
+
+const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+
+function Sidebar({ nav, tenantName, userName, onSignOut, onSearch }: { nav: NavNode[]; tenantName: string; userName: string; onSignOut: () => void; onSearch: () => void }) {
   return (
     <div className="flex h-full flex-col bg-brand-ink text-white" style={{ backgroundImage: 'radial-gradient(140% 50% at 0% 0%, rgba(184,147,90,0.10), transparent 60%)' }}>
       <div className="px-5 pb-6 pt-6">
         <Logo tone="light" size={32} />
         <p className="mt-4 truncate border-t border-white/10 pt-4 text-xs font-medium uppercase tracking-[0.12em] text-white/50">{tenantName}</p>
+      </div>
+      <div className="px-3 pb-4">
+        <button type="button" onClick={onSearch} className="flex h-9 w-full items-center gap-2.5 rounded-md border border-white/10 bg-white/5 px-3 text-sm text-white/55 transition-colors hover:border-white/20 hover:text-white/80">
+          <Search aria-hidden="true" className="size-4" />
+          <span className="flex-1 text-left">Go to a page</span>
+          <kbd className="rounded border border-white/15 px-1.5 text-[11px] text-white/45">{IS_MAC ? '⌘K' : 'Ctrl K'}</kbd>
+        </button>
       </div>
       <nav aria-label="Main navigation" className="flex-1 overflow-y-auto px-3 pb-6">
         <NavItems nodes={nav} />
@@ -70,15 +96,11 @@ function Sidebar({ nav, tenantName, userName, onSignOut }: { nav: NavNode[]; ten
           <span className="block truncate text-sm font-medium">{userName}</span>
           <span className="block truncate text-xs text-white/50">Signed in</span>
         </span>
-        <button
-          type="button"
-          onClick={onSignOut}
-          className="flex size-9 items-center justify-center rounded-md text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-          aria-label="Sign out"
-          title="Sign out"
-        >
-          <LogOut aria-hidden="true" className="size-4" />
-        </button>
+        <Hint label="Sign out">
+          <button type="button" onClick={onSignOut} className="flex size-9 items-center justify-center rounded-md text-white/60 transition-colors hover:bg-white/10 hover:text-white" aria-label="Sign out">
+            <LogOut aria-hidden="true" className="size-4" />
+          </button>
+        </Hint>
       </div>
     </div>
   );
@@ -89,6 +111,7 @@ export function AppShell() {
   const access = useAccessState();
   const { signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const location = useLocation();
   useEffect(() => setMenuOpen(false), [location.pathname]);
 
@@ -117,10 +140,11 @@ export function AppShell() {
 
   const { payload } = access;
   const tenantName = payload.tenant?.name ?? 'Shikshit';
-  const sidebar = <Sidebar nav={nav} tenantName={tenantName} userName={payload.user.name} onSignOut={() => void signOut()} />;
+  const sidebar = <Sidebar nav={nav} tenantName={tenantName} userName={payload.user.name} onSignOut={() => void signOut()} onSearch={() => setPaletteOpen(true)} />;
   return (
     <ThemeProvider accent={payload.tenant?.brand.primary}>
-      <div className="min-h-screen bg-canvas text-fg">
+      <Tooltip.Provider delayDuration={300}>
+        <div className="min-h-screen bg-canvas text-fg">
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 lg:block">{sidebar}</aside>
         {menuOpen ? (
           <div className="fixed inset-0 z-40 lg:hidden">
@@ -139,7 +163,10 @@ export function AppShell() {
             <Outlet />
           </main>
         </div>
-      </div>
+        </div>
+        <CommandPalette nav={nav} open={paletteOpen} onOpenChange={setPaletteOpen} onSignOut={() => void signOut()} />
+        <Toaster position="bottom-right" toastOptions={{ classNames: { toast: '!rounded-lg !border !border-line-subtle !bg-surface !text-fg !shadow-float !font-sans', description: '!text-fg-muted' } }} />
+      </Tooltip.Provider>
     </ThemeProvider>
   );
 }

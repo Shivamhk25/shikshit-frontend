@@ -28,3 +28,11 @@ Object.defineProperty(window, 'localStorage', {
 HTMLDialogElement.prototype.showModal = vi.fn();
 HTMLDialogElement.prototype.close = vi.fn();
 HTMLDialogElement.prototype.show = vi.fn();
+// jsdom has no layout: the command palette (cmdk) and Radix measure elements with these.
+class NoopResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver ??= NoopResizeObserver as unknown as typeof ResizeObserver;
+Element.prototype.scrollIntoView ??= function scrollIntoView() {};

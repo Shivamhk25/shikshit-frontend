@@ -35,3 +35,6 @@ coverage/
 
 # Vite
 .vite/
+
+# screenshots and accessibility report from npm run ui:review
+ui-review/
