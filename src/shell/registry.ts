@@ -23,6 +23,11 @@ export const registry = defineRegistry([
   { screenId: 'subject_class_mappings', title: 'Class subjects', permission: 'aca.subject_class_mappings.view', module: 'aca', parity: 'Companion', web: { path: '/subject-class-mappings' }, mobile: { route: '/subject-class-mappings' } },
   { screenId: 'textbooks', title: 'Textbooks', permission: 'aca.textbooks.view', module: 'aca', parity: 'Companion', web: { path: '/textbooks' }, mobile: { route: '/textbooks' } },
   { screenId: 'textbook_chapters', title: 'Textbook chapters', permission: 'aca.textbook_chapters.view', module: 'aca', parity: 'Companion', web: { path: '/textbook-chapters' }, mobile: { route: '/textbook-chapters' } },
+  { screenId: 'students', title: 'Students', permission: 'stu.students.view', module: 'stu', parity: 'Companion', web: { path: '/students' }, mobile: { route: '/students' } },
+  { screenId: 'student_enrollments', title: 'Enrollments', permission: 'stu.students.view', module: 'stu', parity: 'Companion', web: { path: '/student-enrollments' }, mobile: { route: '/student-enrollments' } },
+  { screenId: 'guardians', title: 'Guardians', permission: 'stu.students.view', module: 'stu', parity: 'Web-only', web: { path: '/guardians' } },
+  { screenId: 'student_guardians', title: 'Student guardians', permission: 'stu.students.view', module: 'stu', parity: 'Companion', web: { path: '/student-guardians' }, mobile: { route: '/student-guardians' } },
+  { screenId: 'student_addresses', title: 'Student addresses', permission: 'stu.student_addresses.view', module: 'stu', parity: 'Web-only', web: { path: '/student-addresses' } },
   { screenId: 'profile', title: 'Profile', parity: 'Both', web: { path: '/profile' }, mobile: { route: '/profile' } },
 ]);
 

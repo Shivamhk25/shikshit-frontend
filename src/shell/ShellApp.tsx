@@ -7,6 +7,7 @@ import { HomePage, NotAvailablePage, OnboardingPage, ProfilePage, RequirePermiss
 import { SignInPage } from './SignInPage';
 import { RoomsPage } from '../features/aca/RoomsPage';
 import { ResourcePage } from '../features/aca/ResourcePage';
+import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
 import { chaptersDescriptor, classSectionsDescriptor, subjectClassesDescriptor, textbooksDescriptor } from '../features/aca/mappings';
 import { campusesDescriptor, divisionsDescriptor, electivesDescriptor, eventsDescriptor, holidaysDescriptor } from '../features/aca/masters';
 import { classesDescriptor, sectionsDescriptor, subjectsDescriptor, termsDescriptor, yearsDescriptor } from '../features/aca/structure';
@@ -152,6 +153,46 @@ function Gate() {
             element={
               <RequirePermission path="/textbook-chapters">
                 <ResourcePage descriptor={chaptersDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="students"
+            element={
+              <RequirePermission path="/students">
+                <ResourcePage descriptor={studentsDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-enrollments"
+            element={
+              <RequirePermission path="/student-enrollments">
+                <ResourcePage descriptor={enrollmentsDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="guardians"
+            element={
+              <RequirePermission path="/guardians">
+                <ResourcePage descriptor={guardiansDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-guardians"
+            element={
+              <RequirePermission path="/student-guardians">
+                <ResourcePage descriptor={studentGuardiansDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-addresses"
+            element={
+              <RequirePermission path="/student-addresses">
+                <ResourcePage descriptor={addressesDescriptor} />
               </RequirePermission>
             }
           />

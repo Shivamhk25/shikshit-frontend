@@ -20,7 +20,7 @@ export interface FieldDef {
   /** For `number`: the step (0.5 for half credits). */
   step?: number;
   /** For `select`: load the options from another resource's list endpoint instead of listing them here. */
-  remote?: { endpoint: string; value: string; label: string };
+  remote?: { endpoint: string; value: string; label: string; /** Too many to load whole: the person searches instead (students, guardians). */ search?: boolean; /** A second field shown in brackets after the label, to tell two people with the same name apart. */ detail?: string };
   /** Shown in the form only (not a column). */
   defaultValue?: string | number | boolean;
 }
