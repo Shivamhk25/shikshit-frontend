@@ -87,6 +87,8 @@ interface Opts {
   pack?: ImportPack;
   /** The institute requires approval; `uploader` says whether the signed-in user (u1) or someone else (u2) uploaded the file. */
   approval?: { uploader: 'me' | 'other' };
+  /** How many reads a file stays in "checking" before it is checked. Raise it to keep that state on screen long enough to assert. */
+  checkPolls?: number;
   approveError?: { status: number; code: string; detail: string };
   /** Current institute setting served by /onboarding/settings. */
   approvalSetting?: boolean;
@@ -179,7 +181,7 @@ function fakeServer(permissions: string[], opts: Opts = {}) {
       if (sub === '' && method === 'GET') {
         polls++;
         if (batch.status === 'uploaded') setStatus('validating');
-        else if (batch.status === 'validating' && polls > 1) setStatus('validated');
+        else if (batch.status === 'validating' && polls > (opts.checkPolls ?? 1)) setStatus('validated');
         else if (batch.status === 'committing' && ++waits > 2) setStatus('committed');
         else if (batch.status === 'rolling_back' && ++waits > 2) setStatus('rolled_back');
         return json(200, batch);
@@ -289,7 +291,7 @@ describe('import workspace', () => {
   });
 
   it('uploads with the chosen options, waits for the check, and shows the rows', async () => {
-    const server = mount(ALL);
+    const server = mount(ALL, { checkPolls: 30 }); // about 600 ms in "checking", so the assertion below cannot miss it
     await userEvent.click(await screen.findByLabelText(/Add new only/));
     await userEvent.click(screen.getByLabelText(/Import the valid rows/));
     await upload();
