@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEven
 import { Button, Input } from '../design-system';
 import { useAccessState } from '../shell/AccessProvider';
 import { ApiError, type CrudClient } from './client';
+import { SearchPicker, type PickerOption } from './SearchPicker';
 import { blankValues, type CrudDescriptor, type FieldDef, type FormValues } from './descriptor';
 
 const PAGE_SIZE = 25;
@@ -26,6 +27,27 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
       </aside>
     </div>
   );
+}
+
+type OptionsClient = (endpoint: string) => CrudClient<Record<string, unknown> & { id: string }, never>;
+
+const toOption = (f: FieldDef, row: Record<string, unknown>): PickerOption => {
+  const r = f.remote!;
+  const detail = r.detail && row[r.detail] ? ` (${String(row[r.detail])})` : '';
+  return { value: String(row[r.value]), label: `${String(row[r.label])}${detail}` };
+};
+
+function searchRemote(client: OptionsClient, f: FieldDef, q: string): Promise<PickerOption[]> {
+  return client(f.remote!.endpoint)
+    .list({ page: 1, pageSize: 20, sort: undefined, q: q || undefined })
+    .then((r) => r.items.map((row) => toOption(f, row)));
+}
+
+function describeRemote(client: OptionsClient, f: FieldDef, id: string): Promise<PickerOption | null> {
+  return client(f.remote!.endpoint)
+    .get(id)
+    .then((row) => toOption(f, row))
+    .catch(() => null);
 }
 
 function FieldControl({ field, value, error, onChange, options }: { field: FieldDef; value: string | number | boolean; error?: string; onChange: (v: string | number | boolean) => void; options?: { value: string; label: string }[] }) {
@@ -134,7 +156,7 @@ export function CrudPage<T extends { id: string }>({
     if (!editing || !optionsClient) return;
     d.fields.forEach((f) => {
       const src = f.remote;
-      if (!src || remote[f.key]) return;
+      if (!src || src.search || remote[f.key]) return;
       optionsClient(src.endpoint)
         .list({ page: 1, pageSize: 200, sort: undefined })
         .then((r) => setRemote((prev) => ({ ...prev, [f.key]: r.items.map((row) => ({ value: String(row[src.value]), label: String(row[src.label]) })) })))
@@ -341,9 +363,23 @@ export function CrudPage<T extends { id: string }>({
       {editing ? (
         <Sheet title={editing.mode === 'create' ? `Add ${d.singular}` : `Edit ${d.singular}`} onClose={close}>
           <form onSubmit={(e) => void submit(e)} className="flex flex-1 flex-col gap-4" noValidate>
-            {d.fields.map((f) => (
-              <FieldControl key={f.key} field={f} value={values[f.key] ?? ''} error={fieldErrors[f.key]} options={remote[f.key]} onChange={(v) => setValues({ ...values, [f.key]: v })} />
-            ))}
+            {d.fields.map((f) =>
+              f.remote?.search && optionsClient ? (
+                <SearchPicker
+                  key={f.key}
+                  label={f.label}
+                  required={f.required}
+                  hint={f.hint}
+                  error={fieldErrors[f.key]}
+                  value={String(values[f.key] ?? '')}
+                  onChange={(v) => setValues({ ...values, [f.key]: v })}
+                  search={(q) => searchRemote(optionsClient, f, q)}
+                  describe={(id) => describeRemote(optionsClient, f, id)}
+                />
+              ) : (
+                <FieldControl key={f.key} field={f} value={values[f.key] ?? ''} error={fieldErrors[f.key]} options={remote[f.key]} onChange={(v) => setValues({ ...values, [f.key]: v })} />
+              ),
+            )}
             {formError ? (
               <p role="alert" className="text-sm text-danger">
                 {formError}
