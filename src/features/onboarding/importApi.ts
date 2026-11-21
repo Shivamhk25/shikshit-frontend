@@ -94,6 +94,10 @@ export interface ImportPack {
   rules: PackRule[];
 }
 
+export interface ImportSettings {
+  importApprovalRequired: boolean;
+}
+
 export interface Paged<T> {
   items: T[];
   total: number;
@@ -156,8 +160,10 @@ export function createImportApi(session: Pick<Session, 'fetch'>, base: string) {
     batch(id: string): Promise<ImportBatch> {
       return json<ImportBatch>(`/imports/${encodeURIComponent(id)}`);
     },
-    async batches(page = 1, pageSize = 10): Promise<Paged<ImportBatch>> {
-      const b = await json<{ items: ImportBatch[]; page: { total: number } }>(`/imports?page=${page}&pageSize=${pageSize}`);
+    async batches(page = 1, pageSize = 10, opts: { awaitingApproval?: boolean } = {}): Promise<Paged<ImportBatch>> {
+      const qs = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+      if (opts.awaitingApproval) qs.set('awaitingApproval', 'true');
+      const b = await json<{ items: ImportBatch[]; page: { total: number } }>(`/imports?${qs.toString()}`);
       return { items: b.items, total: b.page.total };
     },
     async rows(id: string, opts: { page: number; pageSize: number; status?: RowStatus }): Promise<Paged<ImportRow>> {
@@ -171,6 +177,12 @@ export function createImportApi(session: Pick<Session, 'fetch'>, base: string) {
     },
     commit(id: string): Promise<ImportBatch> {
       return json<ImportBatch>(`/imports/${encodeURIComponent(id)}/commit`, { method: 'POST' });
+    },
+    async settings(): Promise<ImportSettings> {
+      return json<ImportSettings>('/settings');
+    },
+    updateSettings(importApprovalRequired: boolean): Promise<ImportSettings> {
+      return json<ImportSettings>('/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ importApprovalRequired }) });
     },
     approve(id: string): Promise<ImportBatch> {
       return json<ImportBatch>(`/imports/${encodeURIComponent(id)}/approve`, { method: 'POST' });
