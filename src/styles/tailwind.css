@@ -1,8 +1,9 @@
 /*
- * Tailwind for the new design system. Only theme + utilities are loaded: no global reset (preflight), so existing
- * screens keep their current look until they are migrated. Colours come from tokens.css (generated).
+ * Tailwind for the Shikshit design system: theme, the base reset (preflight) and utilities. Colours, type and shadows
+ * come from tokens.css, which is generated from @shikshit/shared so web and mobile cannot drift apart.
  */
 @layer theme, base, components, utilities;
 @import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
 @import './tokens.css';
 @import 'tailwindcss/utilities.css' layer(utilities);

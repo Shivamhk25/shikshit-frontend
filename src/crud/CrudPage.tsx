@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { Button, Input } from '../design-system';
+import { ChevronLeft, ChevronRight, Inbox, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Button, Card, Input, PageHeader } from '../design-system';
 import { useAccessState } from '../shell/AccessProvider';
 import { ApiError, type CrudClient } from './client';
 import { SearchPicker, type PickerOption } from './SearchPicker';
@@ -19,13 +20,32 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
       <div className="absolute inset-0 bg-overlay" onClick={onClose} aria-hidden="true" />
-      <aside ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} className="relative z-10 flex h-full w-full max-w-md flex-col gap-4 overflow-y-auto border-l border-line bg-surface p-6">
-        <h2 id={titleId} className="text-lg font-semibold text-fg">
+      <aside ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} className="relative z-10 flex h-full w-full max-w-md flex-col gap-5 overflow-y-auto border-l border-line-subtle bg-surface p-8 shadow-float">
+        <h2 id={titleId} className="font-display text-2xl font-semibold text-fg">
           {title}
         </h2>
         {children}
       </aside>
     </div>
+  );
+}
+
+const STATUS_TONE: Record<string, string> = {
+  active: 'border-success-line bg-success-bg text-success',
+  enrolled: 'border-success-line bg-success-bg text-success',
+  completed: 'border-info-line bg-info-bg text-info',
+  paused: 'border-warning-line bg-warning-bg text-warning',
+  withdrawn: 'border-warning-line bg-warning-bg text-warning',
+};
+
+/** A status column reads as a small pill: green for live, amber for on hold, grey for everything that has ended. */
+function StatusBadge({ value, label }: { value: string; label?: string }) {
+  const text = label ?? (value ? value[0].toUpperCase() + value.slice(1) : '—');
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_TONE[value] ?? 'border-line bg-subtle text-fg-muted'}`}>
+      <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
+      {text}
+    </span>
   );
 }
 
@@ -258,33 +278,44 @@ export function CrudPage<T extends { id: string }>({
 
   return (
     <section className="space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-fg">{d.title}</h1>
-        {canCreate ? <Button onClick={openCreate}>Add {d.singular}</Button> : null}
-      </header>
+      <PageHeader
+        title={d.title}
+        description={total > 0 ? `${total} ${total === 1 ? d.singular : d.title.toLowerCase()}` : undefined}
+        actions={
+          canCreate ? (
+            <Button onClick={openCreate}>
+              <Plus aria-hidden="true" className="size-4" />
+              Add {d.singular}
+            </Button>
+          ) : null
+        }
+      />
 
-      <input type="search" aria-label={`Search ${d.title.toLowerCase()}`} placeholder={d.searchPlaceholder} value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 w-full max-w-sm rounded-md border border-line bg-surface px-3 text-base text-fg placeholder:text-fg-subtle focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring" />
+      <div className="relative max-w-sm">
+        <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
+        <input type="search" aria-label={`Search ${d.title.toLowerCase()}`} placeholder={d.searchPlaceholder} value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 w-full rounded-md border border-line bg-surface pl-10 pr-3 text-sm text-fg shadow-soft placeholder:text-fg-subtle hover:border-line-strong focus-visible:border-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent-subtle" />
+      </div>
 
-      <div role="status" aria-live="polite" className="min-h-5 text-sm text-success">
+      <div role="status" aria-live="polite" className={notice ? 'rounded-md border border-success-line bg-success-bg px-4 py-2.5 text-sm text-success' : 'sr-only'}>
         {notice}
       </div>
 
       {state === 'error' ? (
-        <div role="alert" className="space-y-3 rounded-lg border border-line bg-surface p-6">
+        <div role="alert" className="space-y-3 rounded-lg border border-danger-line bg-surface p-6 shadow-soft">
           <p className="text-fg">{error}</p>
           <Button variant="secondary" onClick={() => void load()}>
             Try again
           </Button>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+        <Card className="overflow-x-auto">
           <table className="w-full text-left text-sm" aria-busy={state === 'loading'}>
-            <thead className="border-b border-line bg-subtle text-fg-muted">
+            <thead className="border-b border-line-subtle text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
               <tr>
                 {cols.map((c) => (
-                  <th key={c.key} scope="col" aria-sort={c.sort && sortKey === c.sort ? (descending ? 'descending' : 'ascending') : undefined} className="px-4 py-3 font-medium">
+                  <th key={c.key} scope="col" aria-sort={c.sort && sortKey === c.sort ? (descending ? 'descending' : 'ascending') : undefined} className="whitespace-nowrap px-5 py-3.5 font-semibold">
                     {c.sort ? (
-                      <button type="button" className="inline-flex items-center gap-1 hover:text-fg" onClick={() => toggleSort(c.sort!)}>
+                      <button type="button" className="inline-flex items-center gap-1 uppercase tracking-[inherit] hover:text-fg" onClick={() => toggleSort(c.sort!)}>
                         {c.label}
                         {sortKey === c.sort ? <span aria-hidden="true">{descending ? '↓' : '↑'}</span> : null}
                       </button>
@@ -294,7 +325,7 @@ export function CrudPage<T extends { id: string }>({
                   </th>
                 ))}
                 {showActions ? (
-                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                  <th scope="col" className="px-5 py-3.5 text-right font-semibold">
                     Actions
                   </th>
                 ) : null}
@@ -303,7 +334,8 @@ export function CrudPage<T extends { id: string }>({
             <tbody>
               {state === 'ready' && rows.length === 0 ? (
                 <tr>
-                  <td colSpan={cols.length + (showActions ? 1 : 0)} className="px-4 py-10 text-center text-fg-muted">
+                  <td colSpan={cols.length + (showActions ? 1 : 0)} className="px-5 py-16 text-center text-fg-muted">
+                    <Inbox aria-hidden="true" className="mx-auto mb-3 size-6 text-fg-subtle" />
                     {query ? `No ${d.title.toLowerCase()} match “${query}”.` : `No ${d.title.toLowerCase()} yet.`}
                     {!query && canCreate ? ` Use “Add ${d.singular}” to create the first one.` : ''}
                   </td>
@@ -311,27 +343,35 @@ export function CrudPage<T extends { id: string }>({
               ) : null}
               {state === 'loading' && rows.length === 0 ? (
                 <tr>
-                  <td colSpan={cols.length + (showActions ? 1 : 0)} className="px-4 py-10 text-center text-fg-muted">
+                  <td colSpan={cols.length + (showActions ? 1 : 0)} className="px-5 py-16 text-center text-fg-muted">
                     Loading…
                   </td>
                 </tr>
               ) : null}
               {rows.map((row) => (
-                <tr key={row.id} className="border-b border-line last:border-0">
-                  {cols.map((c) => (
-                    <td key={c.key} className="px-4 py-3 text-fg">
-                      {c.render ? c.render(row) : String((row as Record<string, unknown>)[c.key] ?? '—')}
+                <tr key={row.id} className="border-b border-line-subtle transition-colors last:border-0 hover:bg-canvas">
+                  {cols.map((c, i) => (
+                    <td key={c.key} className={i === 0 ? 'px-5 py-3.5 font-medium text-fg' : 'px-5 py-3.5 text-fg-muted'}>
+                      {c.key === 'status' ? (
+                        <StatusBadge value={String((row as Record<string, unknown>).status ?? '')} label={c.render ? c.render(row) : undefined} />
+                      ) : c.render ? (
+                        c.render(row)
+                      ) : (
+                        String((row as Record<string, unknown>)[c.key] ?? '—')
+                      )}
                     </td>
                   ))}
                   {showActions ? (
-                    <td className="space-x-2 px-4 py-3 text-right">
+                    <td className="space-x-1 whitespace-nowrap px-5 py-2.5 text-right">
                       {canEdit ? (
-                        <Button size="sm" variant="secondary" onClick={() => openEdit(row)} aria-label={`Edit ${d.label(row)}`}>
+                        <Button size="sm" variant="ghost" onClick={() => openEdit(row)} aria-label={`Edit ${d.label(row)}`}>
+                          <Pencil aria-hidden="true" className="size-3.5" />
                           Edit
                         </Button>
                       ) : null}
                       {canDelete ? (
-                        <Button size="sm" variant="danger" onClick={() => setDeleting(row)} aria-label={`Delete ${d.label(row)}`}>
+                        <Button size="sm" variant="ghost" className="hover:text-danger" onClick={() => setDeleting(row)} aria-label={`Delete ${d.label(row)}`}>
+                          <Trash2 aria-hidden="true" className="size-3.5" />
                           Delete
                         </Button>
                       ) : null}
@@ -341,7 +381,7 @@ export function CrudPage<T extends { id: string }>({
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
 
       {state === 'ready' && total > 0 ? (
@@ -349,12 +389,14 @@ export function CrudPage<T extends { id: string }>({
           <span>
             Showing {from}–{to} of {total}
           </span>
-          <span className="space-x-2">
+          <span className="flex items-center gap-2">
             <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+              <ChevronLeft aria-hidden="true" className="size-4" />
               Previous
             </Button>
             <Button size="sm" variant="secondary" disabled={page >= lastPage} onClick={() => setPage(page + 1)}>
               Next
+              <ChevronRight aria-hidden="true" className="size-4" />
             </Button>
           </span>
         </nav>
@@ -400,7 +442,7 @@ export function CrudPage<T extends { id: string }>({
       {deleting ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-overlay" onClick={() => setDeleting(null)} aria-hidden="true" />
-          <div role="alertdialog" aria-modal="true" aria-label={`Delete ${d.singular}`} className="relative z-10 w-full max-w-sm space-y-4 rounded-lg border border-line bg-surface p-6">
+          <div role="alertdialog" aria-modal="true" aria-label={`Delete ${d.singular}`} className="relative z-10 w-full max-w-sm space-y-4 rounded-lg border border-line-subtle bg-surface p-7 shadow-float">
             <h2 className="text-lg font-semibold text-fg">Delete {d.singular}?</h2>
             <p className="text-fg-muted">
               “{d.label(deleting)}” will be removed from the list.
@@ -411,7 +453,7 @@ export function CrudPage<T extends { id: string }>({
               </p>
             ) : null}
             <div className="flex gap-2">
-              <Button variant="danger" loading={saving} onClick={() => void confirmDelete()}>
+              <Button variant="danger" className="border-transparent bg-danger text-white hover:bg-danger hover:opacity-90" loading={saving} onClick={() => void confirmDelete()}>
                 Delete
               </Button>
               <Button variant="secondary" onClick={() => setDeleting(null)}>

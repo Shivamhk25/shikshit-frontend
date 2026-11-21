@@ -296,7 +296,7 @@ describe('import workspace', () => {
     await userEvent.click(screen.getByLabelText(/Import the valid rows/));
     await upload();
 
-    expect(await screen.findByRole('status')).toHaveTextContent('Checking divisions.csv');
+    await waitFor(() => expect(screen.getAllByRole('status').some((el) => (el.textContent ?? '').includes('Checking divisions.csv'))).toBe(true));
     expect(await screen.findByRole('button', { name: 'Import 2 rows' }, { timeout: 4000 })).toBeEnabled();
     const post = server.calls.find((c) => c.method === 'POST' && c.path === '/onboarding/imports')!;
     expect(post.form).toEqual({ entity: 'school_divisions', strategy: 'insert', commitMode: 'skip_invalid', file: 'file:divisions.csv' });

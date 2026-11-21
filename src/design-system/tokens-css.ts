@@ -1,4 +1,4 @@
-import { createTheme, DEFAULT_ACCENT, font, radius, toCssVariables, type Theme } from '@shikshit/shared/tokens';
+import { brand, createTheme, DEFAULT_ACCENT, font, radius, toCssVariables, type Theme } from '@shikshit/shared/tokens';
 
 /**
  * Renders src/styles/tokens.css from @shikshit/shared so web and mobile can never disagree about a colour.
@@ -50,6 +50,17 @@ export function renderTokensCss(): string {
       `  --color-${s}-bg: var(--color-status-${s}-bg);`,
       `  --color-${s}-line: var(--color-status-${s}-border);`,
     ]),
+    // brand colours are the same in both modes: the ink of brand panels and the gold of rules and marks
+    `  --color-brand-ink: ${brand.ink};`,
+    `  --color-brand-ink-deep: ${brand.inkDeep};`,
+    `  --color-brand-gold: ${brand.gold};`,
+    `  --color-brand-gold-soft: ${brand.goldSoft};`,
+    `  --color-white: #FFFFFF;`,
+    `  --color-transparent: transparent;`,
+    // shadows follow the mode; distinct names so they never refer to themselves
+    `  --shadow-soft: var(--shadow-sm);`,
+    `  --shadow-card: var(--shadow-md);`,
+    `  --shadow-float: var(--shadow-lg);`,
   ].join('\n');
   const radii = Object.entries(radius).map(([k, v]) => `  --radius-${k}: ${v}px;`).join('\n');
   const sizes = Object.entries(font.size)
@@ -76,6 +87,7 @@ ${radii}
 ${sizes}
   --font-sans: ${font.family.sans};
   --font-mono: ${font.family.mono};
+  --font-display: ${font.family.display};
 }
 `;
 }

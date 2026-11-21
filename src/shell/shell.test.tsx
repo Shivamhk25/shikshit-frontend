@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -113,8 +113,17 @@ describe('web shell', () => {
 
   it('offers a permitted screen and opens it', async () => {
     mount({ permissions: ['onb.workspace.view'], navigation: NAV, hasCookie: true });
-    await userEvent.click(await screen.findByRole('link', { name: 'Onboarding' }));
+    const menu = await screen.findByRole('navigation', { name: 'Main navigation' });
+    await userEvent.click(within(menu).getByRole('link', { name: 'Onboarding' }));
     expect(await screen.findByRole('heading', { name: 'Onboarding' })).toBeInTheDocument();
+  });
+
+  it('offers each permitted screen as a shortcut on the home page', async () => {
+    mount({ permissions: ['onb.workspace.view'], navigation: NAV, hasCookie: true });
+    await screen.findByRole('heading', { name: 'Welcome, Asha Verma' });
+    const main = screen.getByRole('main');
+    expect(within(main).getByRole('link', { name: /^Onboarding/ })).toHaveAttribute('href', '/onboarding');
+    expect(within(main).queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
   });
 
   it('blocks a direct visit to a screen the user is not permitted to open', async () => {

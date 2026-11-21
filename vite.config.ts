@@ -20,9 +20,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom', '@reduxjs/toolkit', 'react-redux'],
-          signalr: ['@microsoft/signalr'],
-          bootstrap: ['bootstrap'],
+          vendor: ['react', 'react-dom', 'react-router-dom'],
         },
       },
     },
