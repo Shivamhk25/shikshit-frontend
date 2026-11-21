@@ -126,6 +126,27 @@ describe('web shell', () => {
     expect(within(main).queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
   });
 
+  it('opens the command palette with Ctrl+K, offers only permitted pages, and goes where you choose', async () => {
+    mount({ permissions: ['onb.workspace.view'], navigation: NAV, hasCookie: true });
+    await screen.findByRole('heading', { name: 'Welcome, Asha Verma' });
+    await userEvent.keyboard('{Control>}k{/Control}');
+    const palette = await screen.findByRole('dialog', { name: 'Go to a page' });
+    expect(within(palette).getByRole('option', { name: /Onboarding/ })).toBeInTheDocument();
+    await userEvent.type(within(palette).getByRole('combobox'), 'onboard');
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByRole('heading', { name: 'Onboarding' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Go to a page' })).not.toBeInTheDocument();
+  });
+
+  it('does not offer a page in the palette that the user may not open', async () => {
+    mount({ permissions: [], navigation: NAV, hasCookie: true });
+    await screen.findByRole('heading', { name: 'Welcome, Asha Verma' });
+    await userEvent.keyboard('{Meta>}k{/Meta}');
+    const palette = await screen.findByRole('dialog', { name: 'Go to a page' });
+    expect(within(palette).queryByRole('option', { name: /Onboarding/ })).not.toBeInTheDocument();
+    expect(within(palette).getByRole('option', { name: /Sign out/ })).toBeInTheDocument();
+  });
+
   it('blocks a direct visit to a screen the user is not permitted to open', async () => {
     mount({ permissions: [], navigation: NAV, hasCookie: true }, '/onboarding');
     expect(await screen.findByRole('alert')).toHaveTextContent('Not available');

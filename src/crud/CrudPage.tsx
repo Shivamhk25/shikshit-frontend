@@ -1,34 +1,13 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { ChevronLeft, ChevronRight, Inbox, Pencil, Plus, Search, Trash2 } from 'lucide-react';
-import { Button, Card, Input, PageHeader } from '../design-system';
+import { toast } from 'sonner';
+import { Button, Card, ConfirmDialog, Input, PageHeader, Sheet } from '../design-system';
 import { useAccessState } from '../shell/AccessProvider';
 import { ApiError, type CrudClient } from './client';
 import { SearchPicker, type PickerOption } from './SearchPicker';
 import { blankValues, type CrudDescriptor, type FieldDef, type FormValues } from './descriptor';
 
 const PAGE_SIZE = 25;
-
-function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  const titleId = useId();
-  const ref = useRef<HTMLElement>(null);
-  useEffect(() => {
-    ref.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
-  return (
-    <div className="fixed inset-0 z-40 flex justify-end">
-      <div className="absolute inset-0 bg-overlay" onClick={onClose} aria-hidden="true" />
-      <aside ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} className="relative z-10 flex h-full w-full max-w-md flex-col gap-5 overflow-y-auto border-l border-line-subtle bg-surface p-8 shadow-float">
-        <h2 id={titleId} className="font-display text-2xl font-semibold text-fg">
-          {title}
-        </h2>
-        {children}
-      </aside>
-    </div>
-  );
-}
 
 const STATUS_TONE: Record<string, string> = {
   active: 'border-success-line bg-success-bg text-success',
@@ -236,7 +215,9 @@ export function CrudPage<T extends { id: string }>({
       const input = d.toInput(values);
       if (editing.mode === 'create') await client.create(input);
       else await client.update(editing.row.id, input);
-      setNotice(editing.mode === 'create' ? `${cap(d.singular)} added.` : `${cap(d.singular)} saved.`);
+      const msg = editing.mode === 'create' ? `${cap(d.singular)} added.` : `${cap(d.singular)} saved.`;
+      setNotice(msg);
+      toast.success(msg);
       setEditing(null);
       await load();
     } catch (err) {
@@ -253,6 +234,7 @@ export function CrudPage<T extends { id: string }>({
     try {
       await client.remove(deleting.id);
       setNotice(`${cap(d.singular)} deleted.`);
+      toast.success(`${cap(d.singular)} deleted.`);
       setDeleting(null);
       if (rows.length === 1 && page > 1) setPage(page - 1);
       else await load();
@@ -296,7 +278,8 @@ export function CrudPage<T extends { id: string }>({
         <input type="search" aria-label={`Search ${d.title.toLowerCase()}`} placeholder={d.searchPlaceholder} value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 w-full rounded-md border border-line bg-surface pl-10 pr-3 text-sm text-fg shadow-soft placeholder:text-fg-subtle hover:border-line-strong focus-visible:border-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent-subtle" />
       </div>
 
-      <div role="status" aria-live="polite" className={notice ? 'rounded-md border border-success-line bg-success-bg px-4 py-2.5 text-sm text-success' : 'sr-only'}>
+      {/* the toast is what people see; this live region is what a screen reader hears */}
+      <div role="status" aria-live="polite" className="sr-only">
         {notice}
       </div>
 
@@ -403,7 +386,7 @@ export function CrudPage<T extends { id: string }>({
       ) : null}
 
       {editing ? (
-        <Sheet title={editing.mode === 'create' ? `Add ${d.singular}` : `Edit ${d.singular}`} onClose={close}>
+        <Sheet open title={editing.mode === 'create' ? `Add ${d.singular}` : `Edit ${d.singular}`} onClose={close}>
           <form onSubmit={(e) => void submit(e)} className="flex flex-1 flex-col gap-4" noValidate>
             {d.fields.map((f) =>
               f.remote?.search && optionsClient ? (
@@ -427,7 +410,7 @@ export function CrudPage<T extends { id: string }>({
                 {formError}
               </p>
             ) : null}
-            <div className="mt-auto flex gap-2">
+            <div className="sticky -bottom-8 -mx-8 -mb-8 mt-auto flex gap-2 border-t border-line-subtle bg-surface px-8 py-4">
               <Button type="submit" loading={saving}>
                 Save
               </Button>
@@ -440,28 +423,22 @@ export function CrudPage<T extends { id: string }>({
       ) : null}
 
       {deleting ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-overlay" onClick={() => setDeleting(null)} aria-hidden="true" />
-          <div role="alertdialog" aria-modal="true" aria-label={`Delete ${d.singular}`} className="relative z-10 w-full max-w-sm space-y-4 rounded-lg border border-line-subtle bg-surface p-7 shadow-float">
-            <h2 className="text-lg font-semibold text-fg">Delete {d.singular}?</h2>
-            <p className="text-fg-muted">
-              “{d.label(deleting)}” will be removed from the list.
+        <ConfirmDialog open title={`Delete ${d.singular}?`} onClose={() => setDeleting(null)}>
+          <p className="text-sm text-fg-muted">“{d.label(deleting)}” will be removed from the list.</p>
+          {formError ? (
+            <p role="alert" className="mt-3 text-sm text-danger">
+              {formError}
             </p>
-            {formError ? (
-              <p role="alert" className="text-sm text-danger">
-                {formError}
-              </p>
-            ) : null}
-            <div className="flex gap-2">
-              <Button variant="danger" className="border-transparent bg-danger text-white hover:bg-danger hover:opacity-90" loading={saving} onClick={() => void confirmDelete()}>
-                Delete
-              </Button>
-              <Button variant="secondary" onClick={() => setDeleting(null)}>
-                Cancel
-              </Button>
-            </div>
+          ) : null}
+          <div className="mt-5 flex gap-2">
+            <Button variant="destructive" loading={saving} onClick={() => void confirmDelete()}>
+              Delete
+            </Button>
+            <Button variant="secondary" onClick={() => setDeleting(null)}>
+              Cancel
+            </Button>
           </div>
-        </div>
+        </ConfirmDialog>
       ) : null}
     </section>
   );
