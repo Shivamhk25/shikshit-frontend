@@ -5,6 +5,8 @@ import { useAccessState } from '../../shell/AccessProvider';
 import { useAuth } from '../../shell/AuthProvider';
 import { API_BASE } from '../../shell/web-session';
 import { createImportApi, SETTLED, waitingForApproval, type ImportApi, type ImportBatch, type ImportEntity, type ImportPack } from './importApi';
+import { ApprovalSettings } from './ApprovalSettings';
+import { AwaitingApproval } from './AwaitingApproval';
 import { PackPanel } from './PackPanel';
 import { STATUS_LABEL, formatDate } from './format';
 import { pollConfig } from './pollConfig';
@@ -199,6 +201,7 @@ export function ImportWorkspace({ pollMs = pollConfig.ms }: { pollMs?: number })
         <>
           {!batchId ? (
             <>
+              {can('onb.imports.review') ? <AwaitingApproval api={api} entities={entities} userId={access.payload.user.id} version={listVersion} onOpen={setBatchId} /> : null}
               {pack ? (
                 <PackPanel
                   pack={pack}
@@ -225,6 +228,7 @@ export function ImportWorkspace({ pollMs = pollConfig.ms }: { pollMs?: number })
                 />
               </div>
               <RecentImports api={api} entities={entities} version={listVersion} onOpen={setBatchId} />
+              {can('onb.maker_checker.view') ? <ApprovalSettings api={api} canManage={can('onb.maker_checker.manage')} /> : null}
             </>
           ) : !batch ? (
             error ? (

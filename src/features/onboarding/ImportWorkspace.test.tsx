@@ -88,6 +88,9 @@ interface Opts {
   /** The institute requires approval; `uploader` says whether the signed-in user (u1) or someone else (u2) uploaded the file. */
   approval?: { uploader: 'me' | 'other' };
   approveError?: { status: number; code: string; detail: string };
+  /** Current institute setting served by /onboarding/settings. */
+  approvalSetting?: boolean;
+  settingsError?: { status: number; code: string; detail: string };
 }
 
 /** A fake of the real contract: cookie session, /me/access, and the /onboarding operations with background progress. */
@@ -101,6 +104,7 @@ function fakeServer(permissions: string[], opts: Opts = {}) {
   const ready = rows.length - errors;
   let batch: ImportBatch | null = null;
   let committed = false;
+  let approvalSetting = opts.approvalSetting ?? true;
   let polls = 0;
   let waits = 0; // polls seen since the last commit or rollback: the work takes a few polls, as on a real server
   const json = (status: number, body: unknown, h: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...h } });
@@ -152,7 +156,19 @@ function fakeServer(permissions: string[], opts: Opts = {}) {
       polls = 0;
       return json(202, batch);
     }
-    if (path === '/onboarding/imports' && method === 'GET') return json(200, { items: opts.existing ?? (batch ? [batch] : []), page: { number: 1, size: 8, total: 1 } });
+    if (path === '/onboarding/imports' && method === 'GET') {
+      let items = opts.existing ?? (batch ? [batch] : []);
+      if (url.searchParams.get('awaitingApproval') === 'true') items = items.filter((b) => b.status === 'validated' && b.approvalRequired && !b.approvedAt);
+      return json(200, { items, page: { number: 1, size: 8, total: items.length } });
+    }
+    if (path === '/onboarding/settings') {
+      if (!permissions.includes('onb.maker_checker.view')) return problem(403, { code: 'permission_denied' });
+      if (method === 'PUT') {
+        if (opts.settingsError) return problem(opts.settingsError.status, opts.settingsError);
+        approvalSetting = JSON.parse(String(init?.body)).importApprovalRequired as boolean;
+      }
+      return json(200, { importApprovalRequired: approvalSetting });
+    }
     const m = /^\/onboarding\/imports\/([^/]+)(\/.*)?$/.exec(path);
     if (m) {
       const sub = m[2] ?? '';
@@ -512,10 +528,105 @@ describe('import workspace', () => {
         approvalRequired: true, approvedAt: null, rejectReason: null,
       };
       mount(REVIEW, { existing: [waiting], approval: { uploader: 'other' } });
-      expect(await screen.findByText('waiting.csv')).toBeInTheDocument();
-      expect(screen.getByText('Waiting for approval')).toBeInTheDocument();
+      expect((await screen.findAllByText('waiting.csv')).length).toBe(2); // in the approver's list and in recent files
+      expect(screen.getByText('Waiting for approval', { selector: 'span' })).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: 'Open waiting.csv' }));
       expect(await screen.findByRole('button', { name: 'Approve and import 2 rows' })).toBeEnabled();
+    });
+  });
+
+  describe('finding files that wait, and the approval switch', () => {
+    const waitingFile = (over: Partial<ImportBatch> = {}): ImportBatch => ({
+      id: 'w1', entity: 'school_divisions', strategy: 'upsert', commitMode: 'all_or_nothing', status: 'validated', fileName: 'waiting.csv', totalRows: 3, validRows: 3, warningRows: 0, errorRows: 0,
+      committedRows: 0, revertedRows: 0, progressDone: 0, progressTotal: 3, failure: null, createdAt: '2026-11-20T10:00:00Z', committedAt: null, rollbackDeadline: null, createdBy: 'u2',
+      approvalRequired: true, approvedAt: null, rejectReason: null, ...over,
+    });
+    const REVIEW = [...ALL, 'onb.imports.review'];
+    const MANAGE = [...REVIEW, 'onb.maker_checker.view', 'onb.maker_checker.manage'];
+
+    it('shows an approver the files other people uploaded, and opens one to review', async () => {
+      mount(REVIEW, { existing: [waitingFile(), waitingFile({ id: 'w2', fileName: 'mine.csv', createdBy: 'u1' })] });
+      const section = await screen.findByRole('region', { name: 'Waiting for your approval' });
+      expect(within(section).getByText('waiting.csv')).toBeInTheDocument();
+      expect(within(section).queryByText('mine.csv')).not.toBeInTheDocument(); // an approver cannot approve their own file
+      expect(within(section).getByText(/3 rows ready/)).toBeInTheDocument();
+      await userEvent.click(within(section).getByRole('button', { name: 'Review waiting.csv' }));
+      expect(await screen.findByRole('button', { name: 'Approve and import 3 rows' })).toBeEnabled();
+    });
+
+    it('shows nothing of the kind to someone who cannot review', async () => {
+      mount(ALL, { existing: [waitingFile()] });
+      await screen.findByText('Recent files');
+      expect(screen.queryByRole('region', { name: 'Waiting for your approval' })).not.toBeInTheDocument();
+    });
+
+    it('shows no section when nothing is waiting', async () => {
+      mount(REVIEW, { existing: [] });
+      await screen.findByLabelText('What are you importing?');
+      expect(screen.queryByRole('region', { name: 'Waiting for your approval' })).not.toBeInTheDocument();
+    });
+
+    it('shows the approval switch to someone who can manage it', async () => {
+      mount(MANAGE, { approvalSetting: true });
+      const card = await screen.findByRole('region', { name: 'Approval' });
+      expect(within(card).getByRole('checkbox')).toBeChecked();
+      expect(within(card).getByRole('checkbox')).toBeEnabled();
+    });
+
+    it('asks before turning approval off, and does nothing when the answer is to keep it', async () => {
+      const server = mount(MANAGE, { approvalSetting: true });
+      const card = await screen.findByRole('region', { name: 'Approval' });
+      await userEvent.click(within(card).getByRole('checkbox'));
+      const confirm = within(card).getByRole('group', { name: 'Confirm turning approval off' });
+      expect(server.calls.some((c) => c.method === 'PUT')).toBe(false); // nothing is sent before the answer
+      await userEvent.click(within(confirm).getByRole('button', { name: 'Keep it on' }));
+      expect(within(card).queryByRole('group', { name: 'Confirm turning approval off' })).not.toBeInTheDocument();
+      expect(within(card).getByRole('checkbox')).toBeChecked();
+      expect(server.calls.some((c) => c.method === 'PUT')).toBe(false);
+    });
+
+    it('turns approval off after confirming, and says so', async () => {
+      const server = mount(MANAGE, { approvalSetting: true });
+      const card = await screen.findByRole('region', { name: 'Approval' });
+      await userEvent.click(within(card).getByRole('checkbox'));
+      await userEvent.click(within(card).getByRole('button', { name: 'Turn approval off' }));
+      expect(await within(card).findByRole('status')).toHaveTextContent('Approval is off.');
+      expect(within(card).getByRole('checkbox')).not.toBeChecked();
+      const put = server.calls.find((c) => c.method === 'PUT' && c.path === '/onboarding/settings')!;
+      expect(put).toBeDefined();
+    });
+
+    it('turns approval on straight away, without a question', async () => {
+      const server = mount(MANAGE, { approvalSetting: false });
+      const card = await screen.findByRole('region', { name: 'Approval' });
+      expect(within(card).getByRole('checkbox')).not.toBeChecked();
+      await userEvent.click(within(card).getByRole('checkbox'));
+      expect(await within(card).findByRole('status')).toHaveTextContent('Approval is on.');
+      expect(within(card).getByRole('checkbox')).toBeChecked();
+      expect(within(card).queryByRole('group')).not.toBeInTheDocument();
+      expect(server.calls.filter((c) => c.method === 'PUT')).toHaveLength(1);
+    });
+
+    it('lets a viewer see the switch but not change it', async () => {
+      mount([...REVIEW, 'onb.maker_checker.view'], { approvalSetting: true });
+      const card = await screen.findByRole('region', { name: 'Approval' });
+      expect(within(card).getByRole('checkbox')).toBeDisabled();
+      expect(within(card).getByText('Only someone who manages approval can change this.')).toBeInTheDocument();
+    });
+
+    it('hides the switch entirely without the view permission', async () => {
+      const server = mount(REVIEW, { approvalSetting: true });
+      await screen.findByLabelText('What are you importing?');
+      expect(screen.queryByRole('region', { name: 'Approval' })).not.toBeInTheDocument();
+      expect(server.calls.some((c) => c.path === '/onboarding/settings')).toBe(false); // it does not even ask
+    });
+
+    it('shows the server reason when the change is refused and leaves the switch as it was', async () => {
+      mount(MANAGE, { approvalSetting: false, settingsError: { status: 403, code: 'permission_denied', detail: 'You do not have permission to do this.' } });
+      const card = await screen.findByRole('region', { name: 'Approval' });
+      await userEvent.click(within(card).getByRole('checkbox'));
+      expect(await within(card).findByRole('alert')).toHaveTextContent('You do not have permission to do this.');
+      expect(within(card).getByRole('checkbox')).not.toBeChecked();
     });
   });
 });
