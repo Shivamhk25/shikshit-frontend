@@ -1,15 +1,63 @@
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowUpRight, Circle, ShieldOff } from 'lucide-react';
+import { buildNavigation, type NavNode } from '@shikshit/shared/access';
+import { Card, PageHeader } from '../design-system';
 import { useAccessState } from './AccessProvider';
-import { permissionForPath } from './registry';
+import { NAV_BLURBS, NAV_ICONS } from './navIcons';
+import { permissionForPath, registry } from './registry';
 import { ImportWorkspace } from '../features/onboarding/ImportWorkspace';
+
+const CLIENT = { name: 'web', version: '0.1.0' } as const;
+
+function flatten(nodes: NavNode[]): NavNode[] {
+  return nodes.flatMap((n) => [...(n.target ? [n] : []), ...flatten(n.children)]);
+}
+
+function greeting(now: Date): string {
+  const h = now.getHours();
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+}
 
 export function HomePage() {
   const a = useAccessState();
-  const name = a.phase === 'ready' ? a.payload.user.name : '';
+  const destinations = useMemo(
+    () => (a.phase === 'ready' ? flatten(buildNavigation(a.access, a.payload.workspace.navigation, registry, CLIENT)).filter((n) => n.screenId !== 'home' && n.screenId !== 'profile') : []),
+    [a],
+  );
+  if (a.phase !== 'ready') return null;
+  const now = new Date();
+  const name = a.payload.user.name;
   return (
-    <section className="space-y-2">
-      <h1 className="text-2xl font-semibold text-fg">{name ? `Welcome, ${name}` : 'Welcome'}</h1>
-      <p className="text-fg-muted">Your tools will appear here as your school turns them on.</p>
+    <section className="space-y-10">
+      <PageHeader
+        eyebrow={`${greeting(now)} · ${now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}`}
+        title={name ? `Welcome, ${name}` : 'Welcome'}
+        description={a.payload.tenant ? `${a.payload.tenant.name}. Everything you look after is one click away.` : 'Everything you look after is one click away.'}
+      />
+      {destinations.length === 0 ? (
+        <Card className="p-8 text-sm text-fg-muted">Your tools will appear here as your school turns them on.</Card>
+      ) : (
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {destinations.map((n) => {
+            const Icon = NAV_ICONS[n.screenId] ?? Circle;
+            return (
+              <li key={n.screenId}>
+                <Link to={n.target ?? "/"} className="group block h-full rounded-lg border border-line-subtle bg-surface p-5 shadow-soft transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-line hover:shadow-card">
+                  <span className="flex items-start justify-between">
+                    <span className="flex size-10 items-center justify-center rounded-md bg-accent-subtle text-accent-fg">
+                      <Icon aria-hidden="true" className="size-5" />
+                    </span>
+                    <ArrowUpRight aria-hidden="true" className="size-4 text-fg-subtle transition-colors group-hover:text-accent-fg" />
+                  </span>
+                  <span className="mt-4 block font-display text-lg font-semibold text-fg">{n.label}</span>
+                  {NAV_BLURBS[n.screenId] ? <span className="mt-1 block text-sm text-fg-muted">{NAV_BLURBS[n.screenId]}</span> : null}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }
@@ -18,9 +66,8 @@ export function ProfilePage() {
   const a = useAccessState();
   if (a.phase !== 'ready') return null;
   return (
-    <section className="space-y-2">
-      <h1 className="text-2xl font-semibold text-fg">{a.payload.user.name}</h1>
-      {a.payload.tenant ? <p className="text-fg-muted">{a.payload.tenant.name}</p> : null}
+    <section className="space-y-8">
+      <PageHeader eyebrow="Your account" title={a.payload.user.name} description={a.payload.tenant?.name} />
     </section>
   );
 }
@@ -29,18 +76,20 @@ export function OnboardingPage() {
   const a = useAccessState();
   if (a.phase === 'ready' && a.access.can('onb.imports.view')) return <ImportWorkspace />;
   return (
-    <section className="space-y-2">
-      <h1 className="text-2xl font-semibold text-fg">Onboarding</h1>
-      <p className="text-fg-muted">Data onboarding tasks will appear here.</p>
+    <section className="space-y-8">
+      <PageHeader eyebrow="Setup" title="Onboarding" description="Data onboarding tasks will appear here." />
     </section>
   );
 }
 
 export function NotAvailablePage() {
   return (
-    <section className="space-y-2" role="alert">
-      <h1 className="text-2xl font-semibold text-fg">Not available</h1>
-      <p className="text-fg-muted">This page is not available to you. If you think it should be, ask your school administrator.</p>
+    <section role="alert" className="mx-auto mt-16 max-w-md text-center">
+      <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-subtle text-fg-muted">
+        <ShieldOff aria-hidden="true" className="size-5" />
+      </span>
+      <h1 className="mt-5 font-display text-2xl font-semibold text-fg">Not available</h1>
+      <p className="mt-2 text-sm text-fg-muted">This page is not available to you. If you think it should be, ask your school administrator.</p>
     </section>
   );
 }
