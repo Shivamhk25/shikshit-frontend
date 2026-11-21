@@ -7,6 +7,7 @@ import { HomePage, NotAvailablePage, OnboardingPage, ProfilePage, RequirePermiss
 import { SignInPage } from './SignInPage';
 import { RoomsPage } from '../features/aca/RoomsPage';
 import { ResourcePage } from '../features/aca/ResourcePage';
+import { campusesDescriptor, divisionsDescriptor, electivesDescriptor, eventsDescriptor, holidaysDescriptor } from '../features/aca/masters';
 import { classesDescriptor, sectionsDescriptor, subjectsDescriptor, termsDescriptor, yearsDescriptor } from '../features/aca/structure';
 
 function Gate() {
@@ -78,6 +79,46 @@ function Gate() {
             element={
               <RequirePermission path="/subjects">
                 <ResourcePage descriptor={subjectsDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="school-divisions"
+            element={
+              <RequirePermission path="/school-divisions">
+                <ResourcePage descriptor={divisionsDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="campuses"
+            element={
+              <RequirePermission path="/campuses">
+                <ResourcePage descriptor={campusesDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="holidays"
+            element={
+              <RequirePermission path="/holidays">
+                <ResourcePage descriptor={holidaysDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="calendar-events"
+            element={
+              <RequirePermission path="/calendar-events">
+                <ResourcePage descriptor={eventsDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="elective-groups"
+            element={
+              <RequirePermission path="/elective-groups">
+                <ResourcePage descriptor={electivesDescriptor} />
               </RequirePermission>
             }
           />
