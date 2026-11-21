@@ -6,6 +6,8 @@ import { AuthProvider, useAuth } from './AuthProvider';
 import { HomePage, NotAvailablePage, OnboardingPage, ProfilePage, RequirePermission } from './pages';
 import { SignInPage } from './SignInPage';
 import { RoomsPage } from '../features/aca/RoomsPage';
+import { ResourcePage } from '../features/aca/ResourcePage';
+import { classesDescriptor, sectionsDescriptor, subjectsDescriptor, termsDescriptor, yearsDescriptor } from '../features/aca/structure';
 
 function Gate() {
   const { status } = useAuth();
@@ -36,6 +38,46 @@ function Gate() {
             element={
               <RequirePermission path="/rooms">
                 <RoomsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="academic-years"
+            element={
+              <RequirePermission path="/academic-years">
+                <ResourcePage descriptor={yearsDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="academic-terms"
+            element={
+              <RequirePermission path="/academic-terms">
+                <ResourcePage descriptor={termsDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="classes"
+            element={
+              <RequirePermission path="/classes">
+                <ResourcePage descriptor={classesDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="sections"
+            element={
+              <RequirePermission path="/sections">
+                <ResourcePage descriptor={sectionsDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="subjects"
+            element={
+              <RequirePermission path="/subjects">
+                <ResourcePage descriptor={subjectsDescriptor} />
               </RequirePermission>
             }
           />

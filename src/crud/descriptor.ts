@@ -4,7 +4,7 @@
  * search, side-sheet form, field errors, permission-aware controls, empty/error states).
  */
 
-export type FieldKind = 'text' | 'textarea' | 'number' | 'select' | 'checkbox';
+export type FieldKind = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'checkbox';
 
 export interface FieldDef {
   key: string;
@@ -17,6 +17,10 @@ export interface FieldDef {
   maxLength?: number;
   min?: number;
   max?: number;
+  /** For `number`: the step (0.5 for half credits). */
+  step?: number;
+  /** For `select`: load the options from another resource's list endpoint instead of listing them here. */
+  remote?: { endpoint: string; value: string; label: string };
   /** Shown in the form only (not a column). */
   defaultValue?: string | number | boolean;
 }
