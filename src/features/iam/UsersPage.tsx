@@ -39,8 +39,15 @@ function StatusBadge({ user }: { user: User }) {
   );
 }
 
+type OneTimeLink = { user: User; url: string; kind: 'invite' | 'reset'; emailedTo?: string };
+
+/** The address a one-time link was emailed to, when the server queued it (FND-19). */
+function emailedTo(u: User, queued?: boolean): string | undefined {
+  return queued && u.email ? u.email : undefined;
+}
+
 /** Shows a one-time link with a copy button. The server never shows the link again, so the page says so. */
-function LinkDialog({ link, onClose }: { link: { user: User; url: string; kind: 'invite' | 'reset' }; onClose: () => void }) {
+function LinkDialog({ link, onClose }: { link: OneTimeLink; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -53,7 +60,16 @@ function LinkDialog({ link, onClose }: { link: { user: User; url: string; kind: 
   return (
     <ConfirmDialog open title={link.kind === 'invite' ? 'Invite link' : 'New password link'} onClose={onClose} className="max-w-lg">
       <p className="text-sm text-fg-muted">
-        Send this link to <span className="font-medium text-fg">{link.user.displayName}</span>. It works once and expires in {link.kind === 'invite' ? '7 days' : '24 hours'}. It is not shown again.
+        {link.emailedTo ? (
+          <>
+            We emailed this link to <span className="font-medium text-fg">{link.emailedTo}</span>. You can also copy it here.{' '}
+          </>
+        ) : (
+          <>
+            Send this link to <span className="font-medium text-fg">{link.user.displayName}</span>.{' '}
+          </>
+        )}
+        It works once and expires in {link.kind === 'invite' ? '7 days' : '24 hours'}. It is not shown again.
       </p>
       <p className="break-all rounded-md border border-line-subtle bg-canvas p-3 font-mono text-xs text-fg" data-testid="one-time-link">
         {link.url}
@@ -73,7 +89,7 @@ function LinkDialog({ link, onClose }: { link: { user: User; url: string; kind: 
 
 type Editing = { mode: 'create' } | { mode: 'edit'; user: User };
 
-function UserForm({ editing, api, onSaved, onClose }: { editing: Editing; api: UsersApi; onSaved: (u: User, inviteLink?: string) => void; onClose: () => void }) {
+function UserForm({ editing, api, onSaved, onClose }: { editing: Editing; api: UsersApi; onSaved: (u: User, inviteLink?: string, emailQueued?: boolean) => void; onClose: () => void }) {
   const start = editing.mode === 'edit' ? editing.user : null;
   const [v, setV] = useState({ username: start?.username ?? '', displayName: start?.displayName ?? '', email: start?.email ?? '', phone: start?.phone ?? '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -93,7 +109,7 @@ function UserForm({ editing, api, onSaved, onClose }: { editing: Editing; api: U
     try {
       if (editing.mode === 'create') {
         const u = await api.create({ username: v.username.trim(), displayName: v.displayName.trim(), email: orNull(v.email), phone: orNull(v.phone) });
-        onSaved(u, u.inviteLink);
+        onSaved(u, u.inviteLink, u.emailQueued);
       } else {
         onSaved(await api.update(editing.user.id, { displayName: v.displayName.trim(), email: orNull(v.email), phone: orNull(v.phone) }));
       }
@@ -227,7 +243,7 @@ export function UsersPage({ api: injected, rolesApi: injectedRoles }: { api?: Us
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState('');
   const [editing, setEditing] = useState<Editing | null>(null);
-  const [link, setLink] = useState<{ user: User; url: string; kind: 'invite' | 'reset' } | null>(null);
+  const [link, setLink] = useState<OneTimeLink | null>(null);
   const [confirming, setConfirming] = useState<{ user: User; action: UserAction } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -254,7 +270,7 @@ export function UsersPage({ api: injected, rolesApi: injectedRoles }: { api?: Us
     try {
       const u = await api.act(user.id, action);
       setConfirming(null);
-      if (u.resetLink) setLink({ user: u, url: absoluteLink(u.resetLink), kind: 'reset' });
+      if (u.resetLink) setLink({ user: u, url: absoluteLink(u.resetLink), kind: 'reset', emailedTo: emailedTo(u, u.emailQueued) });
       else toast.success(`${ACTION[action].done}: ${u.displayName}`);
       void load();
     } catch (err) {
@@ -385,9 +401,9 @@ export function UsersPage({ api: injected, rolesApi: injectedRoles }: { api?: Us
           editing={editing}
           api={api}
           onClose={() => setEditing(null)}
-          onSaved={(u, inviteLink) => {
+          onSaved={(u, inviteLink, emailQueued) => {
             setEditing(null);
-            if (inviteLink) setLink({ user: u, url: absoluteLink(inviteLink), kind: 'invite' });
+            if (inviteLink) setLink({ user: u, url: absoluteLink(inviteLink), kind: 'invite', emailedTo: emailedTo(u, emailQueued) });
             else toast.success(`Saved: ${u.displayName}`);
             void load();
           }}

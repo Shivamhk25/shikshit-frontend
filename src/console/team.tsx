@@ -62,8 +62,8 @@ function useTeamApi() {
     };
     return {
       list: () => call<{ items: Account[] }>('GET', '/platform/users').then((r) => r.items),
-      create: (email: string, name: string) => call<Account & { link: string }>('POST', '/platform/users', { email, name }),
-      act: (id: string, action: Action) => call<Account & { link?: string }>('POST', `/platform/users/${id}/${action}`),
+      create: (email: string, name: string) => call<Account & { link: string; emailQueued?: boolean }>('POST', '/platform/users', { email, name }),
+      act: (id: string, action: Action) => call<Account & { link?: string; emailQueued?: boolean }>('POST', `/platform/users/${id}/${action}`),
     };
   }, [session]);
 }
@@ -74,7 +74,7 @@ export function TeamPage() {
   const [rows, setRows] = useState<Account[] | null>(null);
   const [error, setError] = useState('');
   const [adding, setAdding] = useState(false);
-  const [link, setLink] = useState<{ name: string; url: string; invite: boolean } | null>(null);
+  const [link, setLink] = useState<{ name: string; url: string; invite: boolean; emailedTo?: string } | null>(null);
   const [confirming, setConfirming] = useState<{ a: Account; action: Action } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -92,7 +92,7 @@ export function TeamPage() {
     try {
       const r = await api.act(a.id, action);
       setConfirming(null);
-      if (r.link) setLink({ name: r.name, url: consoleLink(r.link), invite: r.status === 'invited' });
+      if (r.link) setLink({ name: r.name, url: consoleLink(r.link), invite: r.status === 'invited', emailedTo: r.emailQueued ? r.email : undefined });
       else toast.success(`${ACTIONS[action].done}: ${r.name}`);
       void load();
     } catch (e) {
@@ -191,7 +191,7 @@ export function TeamPage() {
           onSave={async (email, name) => {
             const r = await api.create(email, name);
             setAdding(false);
-            setLink({ name: r.name, url: consoleLink(r.link), invite: true });
+            setLink({ name: r.name, url: consoleLink(r.link), invite: true, emailedTo: r.emailQueued ? r.email : undefined });
             void load();
           }}
         />
@@ -253,12 +253,21 @@ function InviteSheet({ onClose, onSave }: { onClose: () => void; onSave: (email:
   );
 }
 
-function LinkDialog({ link, onClose }: { link: { name: string; url: string; invite: boolean }; onClose: () => void }) {
+function LinkDialog({ link, onClose }: { link: { name: string; url: string; invite: boolean; emailedTo?: string }; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   return (
     <ConfirmDialog open title={link.invite ? 'Invite link' : 'New password link'} onClose={onClose} className="max-w-lg">
       <p className="text-sm text-fg-muted">
-        Send this to <span className="font-medium text-fg">{link.name}</span> privately. It works once and expires in {link.invite ? '7 days' : '24 hours'}. It is not shown again.
+        {link.emailedTo ? (
+          <>
+            We emailed this link to <span className="font-medium text-fg">{link.emailedTo}</span>. You can also copy it here.{' '}
+          </>
+        ) : (
+          <>
+            Send this to <span className="font-medium text-fg">{link.name}</span> privately.{' '}
+          </>
+        )}
+        It works once and expires in {link.invite ? '7 days' : '24 hours'}. It is not shown again.
       </p>
       <p className="mt-3 break-all rounded-md border border-line-subtle bg-canvas p-3 font-mono text-xs text-fg" data-testid="platform-link">
         {link.url}
