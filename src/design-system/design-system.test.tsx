@@ -46,13 +46,14 @@ describe('KpiCard', () => {
 
 describe('ThemeProvider', () => {
   function Toggle() {
-    const { mode, setMode } = useTheme();
-    return <button onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}>toggle</button>;
+    const { mode, setChoice } = useTheme();
+    return <button onClick={() => setChoice(mode === 'light' ? 'dark' : 'light')}>toggle</button>;
   }
 
   it('sets data-theme, switches mode, and applies then removes a brand accent', async () => {
+    const saved: string[] = [];
     const { unmount } = render(
-      <ThemeProvider accent="#E11D48">
+      <ThemeProvider accent="#E11D48" initialChoice="light" onChoiceChange={(c) => saved.push(c)}>
         <Toggle />
       </ThemeProvider>,
     );
@@ -62,9 +63,40 @@ describe('ThemeProvider', () => {
 
     await userEvent.click(screen.getByText('toggle'));
     expect(root.getAttribute('data-theme')).toBe('dark');
+    expect(saved).toEqual(['dark']);
 
     unmount();
     expect(root.style.getPropertyValue('--color-accent-default')).toBe('');
+  });
+
+  it('paints a preset: modern changes the display font and corner radii, classic leaves the static tokens alone', () => {
+    const root = document.documentElement;
+    const { unmount } = render(
+      <ThemeProvider preset="modern" initialChoice="light">
+        <span />
+      </ThemeProvider>,
+    );
+    expect(root.style.getPropertyValue('--font-display')).toContain('Inter');
+    expect(root.style.getPropertyValue('--radius-md')).not.toBe('');
+    unmount();
+    render(
+      <ThemeProvider initialChoice="light">
+        <span />
+      </ThemeProvider>,
+    );
+    expect(root.style.getPropertyValue('--font-display')).toBe('');
+  });
+
+  it('follows the device when the user chose system', () => {
+    const mm = vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() });
+    vi.stubGlobal('matchMedia', mm);
+    render(
+      <ThemeProvider initialChoice="system">
+        <span />
+      </ThemeProvider>,
+    );
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    vi.unstubAllGlobals();
   });
 
   it('throws when useTheme is used outside the provider', () => {

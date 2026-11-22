@@ -1,6 +1,6 @@
 import {
   BookMarked, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList, Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, HeartHandshake, Home,
-  Layers, Link2, ListChecks, ListOrdered, MapPin, School, ShieldCheck, Sun, Upload, UserCheck, UserCog, UserRound, Users, type LucideIcon,
+  Layers, Link2, Palette, ListChecks, ListOrdered, MapPin, School, ShieldCheck, Sun, Upload, UserCheck, UserCog, UserRound, Users, type LucideIcon,
 } from 'lucide-react';
 
 /** Icon for each screen id. A screen without one gets a neutral dot, so a new server screen never breaks the menu. */
@@ -31,6 +31,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   users: UserCog,
   roles: ShieldCheck,
   parent_links: HeartHandshake,
+  appearance: Palette,
   profile: UserRound,
   school: School,
 };
@@ -62,4 +63,5 @@ export const NAV_BLURBS: Record<string, string> = {
   users: 'Who can sign in, with invites and password resets.',
   roles: 'What each kind of staff member can see and do.',
   parent_links: 'Which children each parent sees in the app.',
+  appearance: 'Your school\'s colour and design style.',
 };

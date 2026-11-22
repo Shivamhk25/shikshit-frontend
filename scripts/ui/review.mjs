@@ -23,9 +23,10 @@ const nav = [
   { screenId: 'users', label: 'Users', order: 61 },
   { screenId: 'roles', label: 'Roles', order: 62 },
   { screenId: 'parent_links', label: 'Parent accounts', order: 63 },
+  { screenId: 'appearance', label: 'Appearance', order: 64 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
-const permissions = ['onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete'];
+const permissions = ['onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage'];
 const students = [
   { id: '1', registrationCode: 'R-0001', firstName: 'Asha', fullName: 'Asha Rao', gender: 'female', dateOfBirth: '2015-06-01', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '1' },
   { id: '2', registrationCode: 'R-0002', firstName: 'Kabir', fullName: 'Kabir Mehta', gender: 'male', dateOfBirth: '2015-02-11', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '2' },
@@ -82,6 +83,8 @@ async function mockApi(page, signedIn, mfa) {
       { id: 'a2', userId: 'u2', userName: 'Ravi Nair', scopeType: 'class_section', scopeRef: 'c2', label: 'Class 5 B (2026-27)', startsAt: '2026-06-01T00:00:00Z', endsAt: '2027-03-31T00:00:00Z', createdAt: '' },
       { id: 'a3', userId: 'u3', userName: 'Priya Sharma', scopeType: 'class_section', scopeRef: 'c3', label: 'Class 8 A (2026-27)', startsAt: '2026-06-01T00:00:00Z', endsAt: null, createdAt: '' },
     ] });
+    if (path === '/institute/appearance') return json(200, { accent: '#1F3A5F', preset: 'classic' });
+    if (path === '/me/preferences') return json(200, { themeMode: 'light' });
     if (path === '/parent-links') return json(200, { items: parentAccounts, page: { number: 1, size: 25, total: parentAccounts.length } });
     if (path === '/guardians') return json(200, { items: [{ id: 'g4', name: 'Meena Iyer', phone: '9811122233' }], page: { number: 1, size: 20, total: 1 } });
     if (path === '/permissions/catalog') return json(200, { items: catalog });
@@ -110,6 +113,9 @@ const screens = [
   { name: 'class-assignments', path: '/class-assignments', signedIn: true, ready: 'text=Class 8 A (2026-27)' },
   { name: 'parent-accounts', path: '/parent-accounts', signedIn: true, ready: 'text=Kabir Kumar' },
   { name: 'parent-link-sheet', path: '/parent-accounts', signedIn: true, ready: 'text=Kabir Kumar', then: (p) => p.getByRole('button', { name: 'Link an account' }).click().then(() => p.waitForSelector('role=dialog')) },
+  { name: 'appearance', path: '/appearance', signedIn: true, ready: 'text=Design style' },
+  { name: 'appearance-modern-teal', path: '/appearance', signedIn: true, ready: 'text=Design style', then: async (p) => { await p.getByRole('radio', { name: /Modern/ }).click(); await p.getByRole('radio', { name: 'Teal' }).click(); } },
+  { name: 'appearance-contrast-dark', path: '/profile', signedIn: true, ready: 'text=Light or dark', then: async (p) => { await p.getByRole('radio', { name: 'Dark' }).click(); } },
   { name: 'palette', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: (p) => p.keyboard.press('Control+k').then(() => p.waitForSelector('role=dialog')) },
 ];
 const sizes = [
