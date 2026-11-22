@@ -28,6 +28,7 @@ export const registry = defineRegistry([
   { screenId: 'guardians', title: 'Guardians', permission: 'stu.students.view', module: 'stu', parity: 'Web-only', web: { path: '/guardians' } },
   { screenId: 'student_guardians', title: 'Student guardians', permission: 'stu.students.view', module: 'stu', parity: 'Companion', web: { path: '/student-guardians' }, mobile: { route: '/student-guardians' } },
   { screenId: 'student_addresses', title: 'Student addresses', permission: 'stu.student_addresses.view', module: 'stu', parity: 'Web-only', web: { path: '/student-addresses' } },
+  { screenId: 'users', title: 'Users', permission: 'iam.users.view', module: 'iam', parity: 'Companion', web: { path: '/users' }, mobile: { route: '/users' } },
   { screenId: 'profile', title: 'Profile', parity: 'Both', web: { path: '/profile' }, mobile: { route: '/profile' } },
 ]);
 

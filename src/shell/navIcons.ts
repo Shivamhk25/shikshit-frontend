@@ -1,6 +1,6 @@
 import {
   BookMarked, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList, Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, Home,
-  Layers, Link2, ListChecks, ListOrdered, MapPin, School, Sun, Upload, UserCheck, UserRound, Users, type LucideIcon,
+  Layers, Link2, ListChecks, ListOrdered, MapPin, School, Sun, Upload, UserCheck, UserCog, UserRound, Users, type LucideIcon,
 } from 'lucide-react';
 
 /** Icon for each screen id. A screen without one gets a neutral dot, so a new server screen never breaks the menu. */
@@ -28,6 +28,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   student_guardians: Link2,
   student_addresses: MapPin,
   scope_assignments: UserCheck,
+  users: UserCog,
   profile: UserRound,
   school: School,
 };
@@ -56,4 +57,5 @@ export const NAV_BLURBS: Record<string, string> = {
   student_guardians: 'Who looks after which student.',
   student_addresses: 'Home and mailing addresses.',
   scope_assignments: 'Which class sections each teacher looks after.',
+  users: 'Who can sign in, with invites and password resets.',
 };
