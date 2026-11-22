@@ -10,6 +10,7 @@ import { RecoveryCodesDialog } from './mfa';
 import { UsersPage } from '../features/iam/UsersPage';
 import { RolesPage } from '../features/iam/RolesPage';
 import { AssignmentsPage } from '../features/iam/AssignmentsPage';
+import { ParentLinksPage } from '../features/iam/ParentLinksPage';
 import { RoomsPage } from '../features/aca/RoomsPage';
 import { ResourcePage } from '../features/aca/ResourcePage';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
@@ -226,6 +227,14 @@ function Gate() {
             element={
               <RequirePermission path="/class-assignments">
                 <AssignmentsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="parent-accounts"
+            element={
+              <RequirePermission path="/parent-accounts">
+                <ParentLinksPage />
               </RequirePermission>
             }
           />
