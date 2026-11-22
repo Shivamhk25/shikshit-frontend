@@ -7,6 +7,7 @@ import { HomePage, NotAvailablePage, OnboardingPage, ProfilePage, RequirePermiss
 import { SignInPage } from './SignInPage';
 import { AcceptInvitePage } from './AcceptInvitePage';
 import { UsersPage } from '../features/iam/UsersPage';
+import { RolesPage } from '../features/iam/RolesPage';
 import { RoomsPage } from '../features/aca/RoomsPage';
 import { ResourcePage } from '../features/aca/ResourcePage';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
@@ -206,6 +207,14 @@ function Gate() {
             element={
               <RequirePermission path="/users">
                 <UsersPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="roles"
+            element={
+              <RequirePermission path="/roles">
+                <RolesPage />
               </RequirePermission>
             }
           />

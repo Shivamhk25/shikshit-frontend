@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Check, ChevronLeft, ChevronRight, Copy, Inbox, Pencil, Plus, Search, UserPlus } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Copy, Inbox, Pencil, Plus, Search, ShieldCheck, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Card, ConfirmDialog, Input, PageHeader, Sheet } from '../../design-system';
 import { useAccessState } from '../../shell/AccessProvider';
 import { useAuth } from '../../shell/AuthProvider';
 import { API_BASE } from '../../shell/web-session';
 import { ApiError } from '../../crud/client';
+import { createRolesApi, type Role, type RolesApi } from './rolesApi';
 import { ACTIONS_BY_STATUS, absoluteLink, createUsersApi, isTemporarilyLocked, type User, type UserAction, type UserStatus, type UsersApi } from './usersApi';
 
 const PAGE_SIZE = 25;
@@ -104,7 +105,7 @@ function UserForm({ editing, api, onSaved, onClose }: { editing: Editing; api: U
   };
 
   return (
-    <Sheet open title={editing.mode === 'create' ? 'Add user' : 'Edit user'} description={editing.mode === 'create' ? 'They get a link to set their own password. Give them a role on the Roles screen.' : undefined} onClose={onClose}>
+    <Sheet open title={editing.mode === 'create' ? 'Add user' : 'Edit user'} description={editing.mode === 'create' ? 'They get a link to set their own password. Give them roles from the shield button in the list.' : undefined} onClose={onClose}>
       <form onSubmit={(e) => void submit(e)} className="flex flex-1 flex-col gap-4" noValidate>
         {editing.mode === 'create' ? (
           <Input label="Username" required autoComplete="off" value={v.username} error={errors.username} hint="Used to sign in. It cannot be changed later." onChange={(e) => setV({ ...v, username: e.target.value })} />
@@ -134,14 +135,87 @@ function UserForm({ editing, api, onSaved, onClose }: { editing: Editing; api: U
   );
 }
 
-/** IAM-01: the people who can sign in to this school. Roles are given on the Roles screen. */
-export function UsersPage({ api: injected }: { api?: UsersApi }) {
+/** Gives a user their roles. The server refuses roles wider than the caller's own access and keeps the last Admin. */
+function RolesSheet({ user, api, onClose }: { user: User; api: RolesApi; onClose: () => void }) {
+  const [all, setAll] = useState<Role[] | null>(null);
+  const [chosen, setChosen] = useState<Set<string>>(new Set());
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    let live = true;
+    Promise.all([api.list(), api.userRoles(user.id)])
+      .then(([roles, held]) => {
+        if (!live) return;
+        setAll(roles);
+        setChosen(new Set(held.map((r) => r.id)));
+      })
+      .catch((err: unknown) => live && setError(err instanceof Error ? err.message : 'Something went wrong.'));
+    return () => {
+      live = false;
+    };
+  }, [api, user.id]);
+  const save = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      await api.setUserRoles(user.id, [...chosen]);
+      toast.success(`Roles saved for ${user.displayName}`);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <Sheet open title={`Roles of ${user.displayName}`} description="Their access changes the next time their app talks to the school." onClose={onClose}>
+      {!all && !error ? (
+        <p role="status" className="text-sm text-fg-muted">
+          Loading roles…
+        </p>
+      ) : null}
+      {all ? (
+        <fieldset className="flex flex-col gap-1">
+          <legend className="sr-only">Roles</legend>
+          {all.map((r) => (
+            <label key={r.id} className="flex cursor-pointer items-start gap-3 rounded-md px-3 py-2.5 hover:bg-canvas">
+              <input type="checkbox" className="mt-0.5 size-4 accent-accent" checked={chosen.has(r.id)} onChange={() => { const next = new Set(chosen); if (next.has(r.id)) next.delete(r.id); else next.add(r.id); setChosen(next); }} />
+              <span>
+                <span className="block text-sm font-medium text-fg">{r.name}</span>
+                <span className="block text-xs text-fg-muted">{r.description ?? `${r.permissionCount} permissions`}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      ) : null}
+      {error ? (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
+      <div className="sticky -bottom-8 -mx-8 -mb-8 mt-auto flex gap-2 border-t border-line-subtle bg-surface px-8 py-4">
+        <Button loading={saving} disabled={!all} onClick={() => void save()}>
+          Save roles
+        </Button>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+      </div>
+    </Sheet>
+  );
+}
+
+/** IAM-01: the people who can sign in to this school, and (IAM-02) the roles each holds. */
+export function UsersPage({ api: injected, rolesApi: injectedRoles }: { api?: UsersApi; rolesApi?: RolesApi }) {
   const { session } = useAuth();
   const api = useMemo(() => injected ?? createUsersApi(session, API_BASE), [injected, session]);
+  const rolesApi = useMemo(() => injectedRoles ?? createRolesApi(session, API_BASE), [injectedRoles, session]);
+  const [rolesFor, setRolesFor] = useState<User | null>(null);
   const access = useAccessState();
   const can = (code: string) => access.phase === 'ready' && access.access.can(code);
   const canCreate = can('iam.users.create');
   const canEdit = can('iam.users.edit');
+  const canGiveRoles = canEdit && can('iam.roles.view');
   const me = access.phase === 'ready' ? access.payload.user.id : undefined;
 
   const [rows, setRows] = useState<User[]>([]);
@@ -269,6 +343,11 @@ export function UsersPage({ api: injected }: { api?: UsersApi }) {
                       <Button size="sm" variant="ghost" aria-label={`Edit ${u.displayName}`} onClick={() => setEditing({ mode: 'edit', user: u })}>
                         <Pencil aria-hidden="true" className="size-3.5" />
                       </Button>
+                      {canGiveRoles ? (
+                        <Button size="sm" variant="ghost" aria-label={`Roles of ${u.displayName}`} onClick={() => setRolesFor(u)}>
+                          <ShieldCheck aria-hidden="true" className="size-3.5" />
+                        </Button>
+                      ) : null}
                       {actionsFor(u).map((a) => (
                         <Button key={a} size="sm" variant={ACTION[a].confirm ? 'danger' : 'secondary'} disabled={busy} aria-label={`${ACTION[a].label} ${u.displayName}`} onClick={() => (ACTION[a].confirm ? setConfirming({ user: u, action: a }) : void run(u, a))}>
                           {ACTION[a].label}
@@ -312,6 +391,7 @@ export function UsersPage({ api: injected }: { api?: UsersApi }) {
           }}
         />
       ) : null}
+      {rolesFor ? <RolesSheet user={rolesFor} api={rolesApi} onClose={() => setRolesFor(null)} /> : null}
       {link ? <LinkDialog link={link} onClose={() => setLink(null)} /> : null}
       {confirming ? (
         <ConfirmDialog open title={`${ACTION[confirming.action].label} ${confirming.user.displayName}?`} onClose={() => setConfirming(null)}>
