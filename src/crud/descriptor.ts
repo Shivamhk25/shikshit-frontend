@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 /**
  * A master-data screen is described, not coded. The descriptor says what the resource is called, which permissions
  * guard it, which columns the table shows and which fields the form has; CrudPage does the rest (paging, sorting,
@@ -50,6 +51,8 @@ export interface CrudDescriptor<T> {
   toForm: (row: T) => FormValues;
   /** Maps form values to the request body. */
   toInput: (values: FormValues) => Record<string, unknown>;
+  /** Shown at the top of the edit sheet for an existing row (for example a student's photo). */
+  editExtra?: (row: T) => ReactNode;
 }
 
 export type FormValues = Record<string, string | number | boolean>;
