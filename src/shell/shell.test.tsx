@@ -10,6 +10,8 @@ interface Opts {
   navigation: { screenId: string; label: string; order: number }[];
   hasCookie?: boolean;
   loginFails?: boolean;
+  /** Two-step sign-in: a correct password gives this challenge instead of tokens. */
+  mfa?: 'verify' | 'setup';
 }
 
 /** A fake server speaking the real contract: cookie-held refresh token, /auth/*, /me/access. */
@@ -25,6 +27,11 @@ function fakeServer(o: Opts) {
   const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = String(input).replace('/api/v1', '');
     calls.push(path);
+    const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, string>) : {};
+    if (path === '/auth/login' && o.mfa && !o.loginFails) return json(202, { mfaRequired: o.mfa, challengeToken: 'ch-1', expiresAt: new Date(Date.now() + 6e5).toISOString() });
+    if (path === '/auth/mfa/verify') return body.code === '123456' ? json(200, tokens()) : body.code === '999999' ? json(401, { code: 'challenge_expired', detail: 'Please sign in again.' }) : json(401, { code: 'invalid_code', detail: 'That code is not right.' });
+    if (path === '/auth/mfa/setup') return json(200, { secret: 'JBSW Y3DP EHPK 3PXP', otpauthUri: 'otpauth://totp/Shikshit:asha?secret=JBSWY3DPEHPK3PXP' });
+    if (path === '/auth/mfa/setup/confirm') return body.code === '123456' ? json(200, { ...tokens(), recoveryCodes: ['abcde-fghij', 'klmno-pqrst'] }) : json(401, { code: 'invalid_code', detail: 'That code is not right.' });
     if (path === '/auth/login') return o.loginFails ? json(401, { code: 'invalid_credentials', detail: 'Incorrect username or password.' }) : json(200, tokens());
     if (path === '/auth/refresh') return cookie ? json(200, tokens()) : json(400, { code: 'validation_failed' });
     if (path === '/auth/logout') {
@@ -88,6 +95,51 @@ describe('web shell', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(await screen.findByRole('heading', { name: 'Welcome, Asha Verma' })).toBeInTheDocument();
     expect(screen.getByText('Springfield School')).toBeInTheDocument();
+  });
+
+  it('asks for a code after the password when two-step sign-in is on', async () => {
+    const server = mount({ permissions: [], navigation: NAV, mfa: 'verify' });
+    await userEvent.type(await screen.findByLabelText('Username'), 'asha');
+    await userEvent.type(screen.getByLabelText('Password'), 'secret');
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByRole('heading', { name: 'Enter your code' })).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Code'), '000000');
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByText('That code is not right.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Code')).toHaveValue('');
+    await userEvent.type(screen.getByLabelText('Code'), '123456');
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByRole('heading', { name: 'Welcome, Asha Verma' })).toBeInTheDocument();
+    expect(server.calls).toContain('/auth/mfa/verify');
+  });
+
+  it('goes back to the password when the sign-in step has expired', async () => {
+    mount({ permissions: [], navigation: NAV, mfa: 'verify' });
+    await userEvent.type(await screen.findByLabelText('Username'), 'asha');
+    await userEvent.type(screen.getByLabelText('Password'), 'secret');
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    await userEvent.type(await screen.findByLabelText('Code'), '999999');
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+    expect(screen.getByText('Please sign in again.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Password')).toHaveValue('');
+  });
+
+  it('makes an administrator set up two-step sign-in, then shows the recovery codes once', async () => {
+    mount({ permissions: [], navigation: NAV, mfa: 'setup' });
+    await userEvent.type(await screen.findByLabelText('Username'), 'admin');
+    await userEvent.type(screen.getByLabelText('Password'), 'secret');
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByRole('heading', { name: 'Set up two-step sign-in' })).toBeInTheDocument();
+    expect(screen.getByTestId('mfa-secret')).toHaveTextContent('JBSW Y3DP EHPK 3PXP');
+    expect(screen.getByRole('link', { name: /Open in app/ })).toHaveAttribute('href', 'otpauth://totp/Shikshit:asha?secret=JBSWY3DPEHPK3PXP');
+    await userEvent.type(screen.getByLabelText('Code from the app'), '123456');
+    await userEvent.click(screen.getByRole('button', { name: 'Turn on and sign in' }));
+    const dialog = await screen.findByRole('alertdialog', { name: 'Two-step sign-in is on' });
+    expect(within(dialog).getByTestId('recovery-codes')).toHaveTextContent('abcde-fghij');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'I have saved them' }));
+    await waitFor(() => expect(screen.queryByTestId('recovery-codes')).not.toBeInTheDocument());
+    expect(screen.getByRole('heading', { name: 'Welcome, Asha Verma' })).toBeInTheDocument();
   });
 
   it('shows the server message on a failed sign-in and stays on the form', async () => {
