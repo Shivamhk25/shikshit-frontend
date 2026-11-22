@@ -9,6 +9,7 @@ import { AcceptInvitePage } from './AcceptInvitePage';
 import { RecoveryCodesDialog } from './mfa';
 import { UsersPage } from '../features/iam/UsersPage';
 import { RolesPage } from '../features/iam/RolesPage';
+import { AssignmentsPage } from '../features/iam/AssignmentsPage';
 import { RoomsPage } from '../features/aca/RoomsPage';
 import { ResourcePage } from '../features/aca/ResourcePage';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
@@ -217,6 +218,14 @@ function Gate() {
             element={
               <RequirePermission path="/roles">
                 <RolesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="class-assignments"
+            element={
+              <RequirePermission path="/class-assignments">
+                <AssignmentsPage />
               </RequirePermission>
             }
           />
