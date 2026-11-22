@@ -132,6 +132,7 @@ describe('web shell', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(await screen.findByRole('heading', { name: 'Set up two-step sign-in' })).toBeInTheDocument();
     expect(screen.getByTestId('mfa-secret')).toHaveTextContent('JBSW Y3DP EHPK 3PXP');
+    expect(await screen.findByTestId('mfa-qr')).toHaveAttribute('src', expect.stringMatching(/^data:image\/svg\+xml/));
     expect(screen.getByRole('link', { name: /Open in app/ })).toHaveAttribute('href', 'otpauth://totp/Shikshit:asha?secret=JBSWY3DPEHPK3PXP');
     await userEvent.type(screen.getByLabelText('Code from the app'), '123456');
     await userEvent.click(screen.getByRole('button', { name: 'Turn on and sign in' }));

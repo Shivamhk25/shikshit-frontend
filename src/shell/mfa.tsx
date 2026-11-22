@@ -15,7 +15,25 @@ export function CodeInput({ value, onChange, label = 'Code', error }: { value: s
   return <Input label={label} value={value} onChange={(e) => onChange(e.target.value)} inputMode="text" autoComplete="one-time-code" autoCapitalize="none" spellCheck={false} autoFocus fieldSize="lg" leading={<KeyRound />} error={error} maxLength={20} />;
 }
 
-/** The secret to add to an authenticator app: a link that opens the app on a phone, and the key to type on a computer. */
+/** The account as a QR code for the authenticator app to scan. SVG, so it is sharp at any size and needs no canvas. */
+export function QrCode({ value }: { value: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    // Loaded only when a setup is shown, so the sign-in page does not carry the QR library.
+    import('qrcode')
+      .then((m) => m.default.toString(value, { type: 'svg', errorCorrectionLevel: 'M', margin: 1, color: { dark: '#14263F', light: '#FFFFFF' } }))
+      .then((svg) => live && setSrc(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`))
+      .catch(() => live && setSrc(null));
+    return () => {
+      live = false;
+    };
+  }, [value]);
+  if (!src) return null;
+  return <img src={src} alt="QR code to scan with your authenticator app" width={176} height={176} className="rounded-md border border-line-subtle bg-white p-1" data-testid="mfa-qr" />;
+}
+
+/** The secret to add to an authenticator app: a QR code to scan, a link that opens the app on a phone, and the key to type. */
 export function SecretPanel({ secret, otpauthUri }: { secret: string; otpauthUri: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -30,9 +48,10 @@ export function SecretPanel({ secret, otpauthUri }: { secret: string; otpauthUri
     <div className="space-y-4 rounded-lg border border-line-subtle bg-canvas p-5">
       <ol className="list-decimal space-y-1.5 pl-5 text-sm text-fg-muted">
         <li>Open an authenticator app: Google Authenticator, Microsoft Authenticator or similar.</li>
-        <li>Add an account, choose to enter a key, and type the key below. If you are on your phone, tap “Open in app” instead.</li>
+        <li>Add an account and scan the QR code. Or type the key below; on your phone, tap “Open in app”.</li>
         <li>Type the 6-digit code the app shows.</li>
       </ol>
+      <QrCode value={otpauthUri} />
       <p className="break-all font-mono text-lg tracking-wider text-fg" data-testid="mfa-secret">
         {secret}
       </p>
