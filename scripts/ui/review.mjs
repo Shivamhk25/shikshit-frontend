@@ -53,6 +53,16 @@ const roles = [
 ];
 const frontOffice = { ...roles[2], grants: [{ permission: 'stu.students.view', scope: 'tenant' }, { permission: 'stu.students.create', scope: 'tenant' }, { permission: 'stu.students.edit', scope: 'tenant' }, { permission: 'stu.student_addresses.view', scope: 'tenant' }, { permission: 'iam.users.view', scope: 'tenant' }] };
 
+const platformPlans = [
+  { code: 'standard', name: 'Standard', modules: ['iam', 'wfl', 'onb', 'aca', 'adm', 'stu', 'fee', 'att', 'exm', 'asg', 'crt', 'slf', 'stf', 'com', 'dsh', 'rpt'] },
+  { code: 'premium', name: 'Premium', modules: ['iam', 'wfl', 'onb', 'aca', 'adm', 'stu', 'fee', 'att', 'exm', 'asg', 'crt', 'slf', 'stf', 'com', 'dsh', 'rpt', 'lrn', 'lib', 'trn', 'hrp', 'inv'] },
+  { code: 'enterprise', name: 'Enterprise', modules: ['iam', 'wfl', 'onb', 'aca', 'adm', 'stu', 'fee', 'att', 'exm', 'asg', 'crt', 'slf', 'stf', 'com', 'dsh', 'rpt', 'lrn', 'lib', 'trn', 'hrp', 'inv', 'aia'] },
+];
+const platformInstitutes = [
+  { id: 'i1', code: 'springfield', name: 'Springfield Public School', status: 'live', planCode: 'premium', planName: 'Premium', modules: ['iam', 'onb', 'aca', 'adm', 'stu', 'fee', 'att', 'exm', 'lib', 'trn'], createdAt: '2026-06-02T00:00:00Z', wentLiveAt: '2026-07-01T00:00:00Z' },
+  { id: 'i2', code: 'gurukul-pune', name: 'Gurukul Vidyalaya, Pune', status: 'onboarding', planCode: 'standard', planName: 'Standard', modules: ['iam', 'onb', 'aca', 'stu'], createdAt: '2026-11-18T00:00:00Z', wentLiveAt: null },
+  { id: 'i3', code: 'st-marys-convent', name: "St. Mary's Convent School", status: 'suspended', planCode: 'standard', planName: 'Standard', modules: ['iam', 'aca', 'stu', 'fee'], createdAt: '2026-03-11T00:00:00Z', wentLiveAt: '2026-04-01T00:00:00Z' },
+];
 const parentAccounts = [
   { userId: 'p1', username: 'sunil.kumar', displayName: 'Sunil Kumar', status: 'active', guardianId: 'g1', guardianName: 'Sunil Kumar', guardianPhone: '9810012345', children: [
     { linkId: 'l1', studentId: 's1', studentName: 'Kabir Kumar', registrationCode: 'SPS-2041', relation: 'father', noAccess: false },
@@ -83,6 +93,12 @@ async function mockApi(page, signedIn, mfa) {
       { id: 'a2', userId: 'u2', userName: 'Ravi Nair', scopeType: 'class_section', scopeRef: 'c2', label: 'Class 5 B (2026-27)', startsAt: '2026-06-01T00:00:00Z', endsAt: '2027-03-31T00:00:00Z', createdAt: '' },
       { id: 'a3', userId: 'u3', userName: 'Priya Sharma', scopeType: 'class_section', scopeRef: 'c3', label: 'Class 8 A (2026-27)', startsAt: '2026-06-01T00:00:00Z', endsAt: null, createdAt: '' },
     ] });
+    if (path === '/platform/auth/refresh') return signedIn ? json(200, tokens) : json(400, { code: 'validation_failed' });
+    if (path === '/platform/me') return json(200, { id: 'p1', email: 'ops@shikshit.app', name: 'Rohan Mehta' });
+    if (path === '/platform/plans') return json(200, { items: platformPlans });
+    if (path === '/platform/institutes' && route.request().method() === 'POST') return json(201, { ...platformInstitutes[1], id: 'n1', adminUsername: 'meena', adminInviteLink: '/accept-invite?token=3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b' });
+    if (path === '/platform/institutes') return json(200, { items: platformInstitutes, page: { number: 1, size: 25, total: platformInstitutes.length } });
+    if (path.startsWith('/platform/institutes/')) return json(200, platformInstitutes[0]);
     if (path === '/institute/appearance') return json(200, { accent: '#1F3A5F', preset: 'classic' });
     if (path === '/me/preferences') return json(200, { themeMode: 'light' });
     if (path === '/parent-links') return json(200, { items: parentAccounts, page: { number: 1, size: 25, total: parentAccounts.length } });
@@ -116,6 +132,10 @@ const screens = [
   { name: 'appearance', path: '/appearance', signedIn: true, ready: 'text=Design style' },
   { name: 'appearance-modern-teal', path: '/appearance', signedIn: true, ready: 'text=Design style', then: async (p) => { await p.getByRole('radio', { name: /Modern/ }).click(); await p.getByRole('radio', { name: 'Teal' }).click(); } },
   { name: 'appearance-contrast-dark', path: '/profile', signedIn: true, ready: 'text=Light or dark', then: async (p) => { await p.getByRole('radio', { name: 'Dark' }).click(); } },
+  { name: 'console-signin', path: '/console', signedIn: false, ready: 'text=Platform sign-in' },
+  { name: 'console-institutes', path: '/console', signedIn: true, ready: 'text=Gurukul Vidyalaya, Pune' },
+  { name: 'console-new', path: '/console/new', signedIn: true, ready: 'text=New institute', then: async (p) => { await p.getByLabel(/^School name/).fill('Delhi Public School, Dwarka'); } },
+  { name: 'console-detail', path: '/console/institutes/i1', signedIn: true, ready: 'text=Save modules' },
   { name: 'palette', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: (p) => p.keyboard.press('Control+k').then(() => p.waitForSelector('role=dialog')) },
 ];
 const sizes = [
