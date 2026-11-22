@@ -11,6 +11,7 @@ import { UsersPage } from '../features/iam/UsersPage';
 import { RolesPage } from '../features/iam/RolesPage';
 import { AssignmentsPage } from '../features/iam/AssignmentsPage';
 import { ParentLinksPage } from '../features/iam/ParentLinksPage';
+import { AppearancePage } from '../features/iam/AppearancePage';
 import { RoomsPage } from '../features/aca/RoomsPage';
 import { ResourcePage } from '../features/aca/ResourcePage';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
@@ -235,6 +236,14 @@ function Gate() {
             element={
               <RequirePermission path="/parent-accounts">
                 <ParentLinksPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="appearance"
+            element={
+              <RequirePermission path="/appearance">
+                <AppearancePage />
               </RequirePermission>
             }
           />

@@ -31,6 +31,7 @@ export const registry = defineRegistry([
   { screenId: 'scope_assignments', title: 'Class assignments', permission: 'iam.scope_assignments.view', module: 'iam', parity: 'Web-only', web: { path: '/class-assignments' } },
   { screenId: 'users', title: 'Users', permission: 'iam.users.view', module: 'iam', parity: 'Companion', web: { path: '/users' }, mobile: { route: '/users' } },
   { screenId: 'roles', title: 'Roles', permission: 'iam.roles.view', module: 'iam', parity: 'Web-only', web: { path: '/roles' } },
+  { screenId: 'appearance', title: 'Appearance', permission: 'iam.appearance.view', module: 'iam', parity: 'Web-only', web: { path: '/appearance' } },
   { screenId: 'parent_links', title: 'Parent accounts', permission: 'iam.parent_links.view', module: 'iam', parity: 'Companion', web: { path: '/parent-accounts' }, mobile: { route: '/parent-accounts' } },
   { screenId: 'profile', title: 'Profile', parity: 'Both', web: { path: '/profile' }, mobile: { route: '/profile' } },
 ]);

@@ -1,8 +1,9 @@
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Circle, ShieldOff } from 'lucide-react';
+import { ArrowUpRight, Circle, Monitor, Moon, ShieldOff, Sun } from 'lucide-react';
+import { THEME_MODE_LABELS, THEME_MODES, type ThemeMode } from '@shikshit/shared/tokens';
 import { buildNavigation, type NavNode } from '@shikshit/shared/access';
-import { Card, PageHeader } from '../design-system';
+import { Card, PageHeader, cx, useTheme } from '../design-system';
 import { useAccessState } from './AccessProvider';
 import { NAV_BLURBS, NAV_ICONS } from './navIcons';
 import { permissionForPath, registry } from './registry';
@@ -69,8 +70,46 @@ export function ProfilePage() {
   return (
     <section className="space-y-8">
       <PageHeader eyebrow="Your account" title={a.payload.user.name} description={a.payload.tenant?.name} />
+      <ThemeModeCard />
       <TwoStepCard />
     </section>
+  );
+}
+
+const MODE_ICONS: Record<ThemeMode, typeof Sun> = { light: Sun, dark: Moon, system: Monitor };
+
+/** Light, dark or the device's setting: each person's own choice (decision 0005), saved to their account. */
+function ThemeModeCard() {
+  const { choice, setChoice } = useTheme();
+  return (
+    <Card className="max-w-2xl space-y-4 p-6">
+      <div>
+        <h2 id="mode-heading" className="font-display text-lg font-semibold text-fg">Light or dark</h2>
+        <p className="text-sm text-fg-muted">How Shikshit looks for you, on every device you sign in on.</p>
+      </div>
+      <div role="radiogroup" aria-labelledby="mode-heading" className="inline-flex flex-wrap gap-1 rounded-lg border border-line-subtle bg-canvas p-1">
+        {THEME_MODES.map((m) => {
+          const Icon = MODE_ICONS[m];
+          const selected = choice === m;
+          return (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => setChoice(m)}
+              className={cx(
+                'flex items-center gap-2 rounded-md px-3.5 py-2 text-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent-subtle',
+                selected ? 'bg-surface font-medium text-fg shadow-soft' : 'text-fg-muted hover:text-fg',
+              )}
+            >
+              <Icon aria-hidden="true" className="size-4" />
+              {THEME_MODE_LABELS[m]}
+            </button>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
 

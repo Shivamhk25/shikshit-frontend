@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { Circle, LogOut, Menu, Search, X } from 'lucide-react';
-import { Toaster } from 'sonner';
+import { toast, Toaster } from 'sonner';
 import { buildNavigation, type NavNode } from '@shikshit/shared/access';
+import { appearanceFromBrand, type ThemeMode } from '@shikshit/shared/tokens';
+import { createAppearanceApi, storedMode, storeMode } from '../features/iam/appearanceApi';
+import { API_BASE } from './web-session';
 import { Button, Logo, ThemeProvider, cx } from '../design-system';
 import { useAccessState } from './AccessProvider';
 import { useAuth } from './AuthProvider';
@@ -109,7 +112,35 @@ function Sidebar({ nav, tenantName, userName, onSignOut, onSearch }: { nav: NavN
 /** Sign-in gate and layout. Navigation comes from the server's access payload, filtered by what this build can render. */
 export function AppShell() {
   const access = useAccessState();
-  const { signOut } = useAuth();
+  const { signOut, session } = useAuth();
+  const appearanceApi = useMemo(() => createAppearanceApi(session, API_BASE), [session]);
+  const [themeChoice, setThemeChoice] = useState<ThemeMode>(storedMode);
+  const ready = access.phase === 'ready';
+  useEffect(() => {
+    if (!ready) return;
+    let live = true;
+    appearanceApi.getPreferences().then(
+      (p) => {
+        if (!live) return;
+        setThemeChoice(p.themeMode);
+        storeMode(p.themeMode);
+      },
+      () => {
+        /* keep this browser's last choice */
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [ready, appearanceApi]);
+  const saveThemeChoice = useCallback(
+    (c: ThemeMode) => {
+      setThemeChoice(c);
+      storeMode(c);
+      appearanceApi.setPreferences(c).catch(() => toast.error('Your choice is used here but could not be saved. Try again later.'));
+    },
+    [appearanceApi],
+  );
   const [menuOpen, setMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const location = useLocation();
@@ -142,7 +173,7 @@ export function AppShell() {
   const tenantName = payload.tenant?.name ?? 'Shikshit';
   const sidebar = <Sidebar nav={nav} tenantName={tenantName} userName={payload.user.name} onSignOut={() => void signOut()} onSearch={() => setPaletteOpen(true)} />;
   return (
-    <ThemeProvider accent={payload.tenant?.brand.primary}>
+    <ThemeProvider {...appearanceFromBrand(payload.tenant?.brand)} initialChoice={themeChoice} onChoiceChange={saveThemeChoice}>
       <Tooltip.Provider delayDuration={300}>
         <div className="min-h-screen bg-canvas text-fg">
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 lg:block">{sidebar}</aside>
