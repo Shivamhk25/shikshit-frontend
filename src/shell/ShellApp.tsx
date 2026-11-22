@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './AuthProvider';
 import { HomePage, NotAvailablePage, OnboardingPage, ProfilePage, RequirePermission } from './pages';
 import { SignInPage } from './SignInPage';
 import { AcceptInvitePage } from './AcceptInvitePage';
+import { RecoveryCodesDialog } from './mfa';
 import { UsersPage } from '../features/iam/UsersPage';
 import { RolesPage } from '../features/iam/RolesPage';
 import { RoomsPage } from '../features/aca/RoomsPage';
@@ -30,6 +31,7 @@ function Gate() {
   if (status === 'signedOut') return <SignInPage />;
   return (
     <AccessProvider>
+      <RecoveryCodesDialog />
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<HomePage />} />

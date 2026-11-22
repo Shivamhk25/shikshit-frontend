@@ -5,7 +5,7 @@ import { ApiError, createCrudClient, type ListParams, type PageResult } from '..
  * lifecycle actions and PATCH are specific to users. */
 
 export type UserStatus = 'invited' | 'active' | 'locked' | 'disabled';
-export type UserAction = 'deactivate' | 'reactivate' | 'lock' | 'unlock' | 'reset-password';
+export type UserAction = 'deactivate' | 'reactivate' | 'lock' | 'unlock' | 'reset-password' | 'reset-mfa';
 
 export interface User {
   id: string;

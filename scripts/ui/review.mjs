@@ -50,12 +50,15 @@ const roles = [
 ];
 const frontOffice = { ...roles[2], grants: [{ permission: 'stu.students.view', scope: 'tenant' }, { permission: 'stu.students.create', scope: 'tenant' }, { permission: 'stu.students.edit', scope: 'tenant' }, { permission: 'stu.student_addresses.view', scope: 'tenant' }, { permission: 'iam.users.view', scope: 'tenant' }] };
 
-async function mockApi(page, signedIn) {
+async function mockApi(page, signedIn, mfa) {
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname.replace('/api/v1', '');
     const json = (status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body), headers: { 'X-Access-Version': '1' } });
     const tokens = { accessToken: 'a1', accessTokenExpiresAt: new Date(Date.now() + 9e5).toISOString(), refreshTokenExpiresAt: new Date(Date.now() + 9e8).toISOString(), mustChangePassword: false };
     if (path === '/auth/refresh') return signedIn ? json(200, tokens) : json(400, { code: 'validation_failed' });
+    if (path === '/auth/login' && mfa) return json(202, { mfaRequired: mfa, challengeToken: 'ch-1', expiresAt: new Date(Date.now() + 6e5).toISOString() });
+    if (path === '/auth/mfa/setup') return json(200, { secret: 'JBSW Y3DP EHPK 3PXP JBSW Y3DP EHPK 3PXP', otpauthUri: 'otpauth://totp/Shikshit:asha.verma?secret=JBSWY3DPEHPK3PXP' });
+    if (path === '/me/mfa') return json(200, { enabled: true, required: true, recoveryCodesLeft: 9 });
     if (path === '/auth/login') return json(401, { code: 'invalid_credentials', detail: 'Incorrect username or password.' });
     if (path === '/me/access')
       return json(200, { user: { id: 'u1', name: 'Asha Verma', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'stu', 'iam'] }, permissions, scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 1 });
@@ -79,6 +82,9 @@ const screens = [
   { name: 'accept-invite', path: '/accept-invite?token=abc', signedIn: false, ready: 'text=Set your password' },
   { name: 'roles', path: '/roles', signedIn: true, ready: 'text=Front office' },
   { name: 'role-matrix', path: '/roles', signedIn: true, ready: 'text=Front office', then: async (p) => { await p.getByRole('button', { name: 'Edit Front office' }).click(); await p.waitForSelector('text=Who students reaches', { state: 'attached' }).catch(() => {}); await p.getByRole('checkbox', { name: 'Delete Students' }).click(); } },
+  { name: 'mfa-verify', path: '/', signedIn: false, mfa: 'verify', ready: 'text=Sign in', then: async (p) => { await (async (p) => { await p.getByLabel('Username').fill('asha.verma'); await p.getByLabel('Password', { exact: true }).fill('a long password'); await p.getByRole('button', { name: 'Sign in' }).click(); await p.waitForSelector('#signin-title'); })(p); await p.waitForSelector('text=Enter your code'); } },
+  { name: 'mfa-setup', path: '/', signedIn: false, mfa: 'setup', ready: 'text=Sign in', then: async (p) => { await (async (p) => { await p.getByLabel('Username').fill('asha.verma'); await p.getByLabel('Password', { exact: true }).fill('a long password'); await p.getByRole('button', { name: 'Sign in' }).click(); await p.waitForSelector('#signin-title'); })(p); await p.waitForSelector('text=Set up two-step sign-in'); } },
+  { name: 'profile-mfa', path: '/profile', signedIn: true, ready: 'text=Two-step sign-in' },
   { name: 'palette', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: (p) => p.keyboard.press('Control+k').then(() => p.waitForSelector('role=dialog')) },
 ];
 const sizes = [
@@ -93,7 +99,7 @@ for (const s of screens) {
   for (const size of sizes) {
     const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 2 });
     const page = await ctx.newPage();
-    await mockApi(page, s.signedIn);
+    await mockApi(page, s.signedIn, s.mfa);
     await page.goto(BASE + s.path);
     await page.waitForSelector(s.ready);
     if (s.then) await s.then(page);

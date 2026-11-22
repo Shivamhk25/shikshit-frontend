@@ -7,6 +7,7 @@ import { useAccessState } from './AccessProvider';
 import { NAV_BLURBS, NAV_ICONS } from './navIcons';
 import { permissionForPath, registry } from './registry';
 import { ImportWorkspace } from '../features/onboarding/ImportWorkspace';
+import { TwoStepCard } from './mfa';
 
 const CLIENT = { name: 'web', version: '0.1.0' } as const;
 
@@ -68,6 +69,7 @@ export function ProfilePage() {
   return (
     <section className="space-y-8">
       <PageHeader eyebrow="Your account" title={a.payload.user.name} description={a.payload.tenant?.name} />
+      <TwoStepCard />
     </section>
   );
 }

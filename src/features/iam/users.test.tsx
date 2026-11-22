@@ -125,6 +125,16 @@ describe('users page', () => {
     expect(server.calls.find((c) => c.method === 'PUT')).toEqual({ method: 'PUT', path: '/users/u1/roles', body: { roleIds: ['r-clerk'] } });
   });
 
+  it('offers to reset two-step sign-in only for others who have it on', async () => {
+    const server = mount(ALL, [user('me', { displayName: 'Myself', mfaEnabled: true }), user('u1', { mfaEnabled: true }), user('u2')]);
+    expect(within(await row('Myself')).queryByRole('button', { name: /^Reset two-step/ })).not.toBeInTheDocument();
+    expect(within(await row('Person u2')).queryByRole('button', { name: /^Reset two-step/ })).not.toBeInTheDocument();
+    await userEvent.click(within(await row('Person u1')).getByRole('button', { name: /^Reset two-step/ }));
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Reset two-step' }));
+    expect(await screen.findByText(/Two-step sign-in reset/)).toBeInTheDocument();
+    expect(server.calls.some((c) => c.method === 'POST' && c.path === '/users/u1/reset-mfa')).toBe(true);
+  });
+
   it('shows the reset link once it is issued', async () => {
     mount(ALL, [user('u1')]);
     await userEvent.click(within(await row('Person u1')).getByRole('button', { name: /^Reset password/ }));

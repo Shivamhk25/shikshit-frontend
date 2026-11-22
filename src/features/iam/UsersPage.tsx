@@ -24,6 +24,7 @@ const ACTION: Record<UserAction, { label: string; done: string; confirm?: string
   unlock: { label: 'Unlock', done: 'Unlocked' },
   deactivate: { label: 'Disable', done: 'Disabled', confirm: 'They are signed out everywhere and lose access to the school until reactivated.' },
   reactivate: { label: 'Reactivate', done: 'Reactivated' },
+  'reset-mfa': { label: 'Reset two-step', done: 'Two-step sign-in reset', confirm: 'Use this when they lost their phone. Their authenticator and recovery codes stop working and they are signed out everywhere. Administrators set it up again at their next sign-in.' },
 };
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'Never');
@@ -265,7 +266,8 @@ export function UsersPage({ api: injected, rolesApi: injectedRoles }: { api?: Us
 
   const actionsFor = (u: User): UserAction[] => {
     const list = isTemporarilyLocked(u) ? ['unlock' as UserAction, ...ACTIONS_BY_STATUS[u.status]] : ACTIONS_BY_STATUS[u.status];
-    return u.id === me ? list.filter((a) => a !== 'lock' && a !== 'deactivate') : list;
+    const withMfa: UserAction[] = u.mfaEnabled ? [...list, 'reset-mfa'] : list;
+    return u.id === me ? withMfa.filter((a) => a !== 'lock' && a !== 'deactivate' && a !== 'reset-mfa') : withMfa;
   };
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
