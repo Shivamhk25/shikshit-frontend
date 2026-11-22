@@ -388,6 +388,7 @@ export function CrudPage<T extends { id: string }>({
       {editing ? (
         <Sheet open title={editing.mode === 'create' ? `Add ${d.singular}` : `Edit ${d.singular}`} onClose={close}>
           <form onSubmit={(e) => void submit(e)} className="flex flex-1 flex-col gap-4" noValidate>
+            {editing.mode === 'edit' && d.editExtra ? d.editExtra(editing.row as T) : null}
             {d.fields.map((f) =>
               f.remote?.search && optionsClient ? (
                 <SearchPicker
