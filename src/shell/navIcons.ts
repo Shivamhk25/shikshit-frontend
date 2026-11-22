@@ -1,5 +1,5 @@
 import {
-  BookMarked, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList, Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, Home,
+  BookMarked, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList, Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, HeartHandshake, Home,
   Layers, Link2, ListChecks, ListOrdered, MapPin, School, ShieldCheck, Sun, Upload, UserCheck, UserCog, UserRound, Users, type LucideIcon,
 } from 'lucide-react';
 
@@ -30,6 +30,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   scope_assignments: UserCheck,
   users: UserCog,
   roles: ShieldCheck,
+  parent_links: HeartHandshake,
   profile: UserRound,
   school: School,
 };
@@ -60,4 +61,5 @@ export const NAV_BLURBS: Record<string, string> = {
   scope_assignments: 'Which class sections each teacher looks after.',
   users: 'Who can sign in, with invites and password resets.',
   roles: 'What each kind of staff member can see and do.',
+  parent_links: 'Which children each parent sees in the app.',
 };

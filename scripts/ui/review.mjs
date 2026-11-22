@@ -22,9 +22,10 @@ const nav = [
   { screenId: 'scope_assignments', label: 'Class assignments', order: 60 },
   { screenId: 'users', label: 'Users', order: 61 },
   { screenId: 'roles', label: 'Roles', order: 62 },
+  { screenId: 'parent_links', label: 'Parent accounts', order: 63 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
-const permissions = ['onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete'];
+const permissions = ['onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete'];
 const students = [
   { id: '1', registrationCode: 'R-0001', firstName: 'Asha', fullName: 'Asha Rao', gender: 'female', dateOfBirth: '2015-06-01', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '1' },
   { id: '2', registrationCode: 'R-0002', firstName: 'Kabir', fullName: 'Kabir Mehta', gender: 'male', dateOfBirth: '2015-02-11', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '2' },
@@ -51,6 +52,19 @@ const roles = [
 ];
 const frontOffice = { ...roles[2], grants: [{ permission: 'stu.students.view', scope: 'tenant' }, { permission: 'stu.students.create', scope: 'tenant' }, { permission: 'stu.students.edit', scope: 'tenant' }, { permission: 'stu.student_addresses.view', scope: 'tenant' }, { permission: 'iam.users.view', scope: 'tenant' }] };
 
+const parentAccounts = [
+  { userId: 'p1', username: 'sunil.kumar', displayName: 'Sunil Kumar', status: 'active', guardianId: 'g1', guardianName: 'Sunil Kumar', guardianPhone: '9810012345', children: [
+    { linkId: 'l1', studentId: 's1', studentName: 'Kabir Kumar', registrationCode: 'SPS-2041', relation: 'father', noAccess: false },
+    { linkId: 'l2', studentId: 's2', studentName: 'Anaya Kumar', registrationCode: 'SPS-2213', relation: 'father', noAccess: false },
+  ] },
+  { userId: 'p2', username: 'neha.verma', displayName: 'Neha Verma', status: 'invited', guardianId: 'g2', guardianName: 'Neha Verma', guardianPhone: '9822234567', children: [
+    { linkId: 'l3', studentId: 's3', studentName: 'Ishaan Verma', registrationCode: 'SPS-1987', relation: 'mother', noAccess: false },
+  ] },
+  { userId: 'p3', username: 'rahul.s', displayName: 'Rahul Singh', status: 'active', guardianId: 'g3', guardianName: 'Rahul Singh', guardianPhone: '9833345678', children: [
+    { linkId: 'l4', studentId: 's4', studentName: 'Diya Singh', registrationCode: 'SPS-2102', relation: 'father', noAccess: true },
+  ] },
+];
+
 async function mockApi(page, signedIn, mfa) {
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname.replace('/api/v1', '');
@@ -68,6 +82,8 @@ async function mockApi(page, signedIn, mfa) {
       { id: 'a2', userId: 'u2', userName: 'Ravi Nair', scopeType: 'class_section', scopeRef: 'c2', label: 'Class 5 B (2026-27)', startsAt: '2026-06-01T00:00:00Z', endsAt: '2027-03-31T00:00:00Z', createdAt: '' },
       { id: 'a3', userId: 'u3', userName: 'Priya Sharma', scopeType: 'class_section', scopeRef: 'c3', label: 'Class 8 A (2026-27)', startsAt: '2026-06-01T00:00:00Z', endsAt: null, createdAt: '' },
     ] });
+    if (path === '/parent-links') return json(200, { items: parentAccounts, page: { number: 1, size: 25, total: parentAccounts.length } });
+    if (path === '/guardians') return json(200, { items: [{ id: 'g4', name: 'Meena Iyer', phone: '9811122233' }], page: { number: 1, size: 20, total: 1 } });
     if (path === '/permissions/catalog') return json(200, { items: catalog });
     if (path === '/roles') return json(200, { items: roles });
     if (path === '/roles/r3') return json(200, frontOffice);
@@ -92,6 +108,8 @@ const screens = [
   { name: 'mfa-setup', path: '/', signedIn: false, mfa: 'setup', ready: 'text=Sign in', then: async (p) => { await (async (p) => { await p.getByLabel('Username').fill('asha.verma'); await p.getByLabel('Password', { exact: true }).fill('a long password'); await p.getByRole('button', { name: 'Sign in' }).click(); await p.waitForSelector('#signin-title'); })(p); await p.waitForSelector('text=Set up two-step sign-in'); } },
   { name: 'profile-mfa', path: '/profile', signedIn: true, ready: 'text=Two-step sign-in' },
   { name: 'class-assignments', path: '/class-assignments', signedIn: true, ready: 'text=Class 8 A (2026-27)' },
+  { name: 'parent-accounts', path: '/parent-accounts', signedIn: true, ready: 'text=Kabir Kumar' },
+  { name: 'parent-link-sheet', path: '/parent-accounts', signedIn: true, ready: 'text=Kabir Kumar', then: (p) => p.getByRole('button', { name: 'Link an account' }).click().then(() => p.waitForSelector('role=dialog')) },
   { name: 'palette', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: (p) => p.keyboard.press('Control+k').then(() => p.waitForSelector('role=dialog')) },
 ];
 const sizes = [
