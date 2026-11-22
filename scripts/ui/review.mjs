@@ -86,6 +86,9 @@ async function mockApi(page, signedIn, mfa) {
     if (path === '/auth/mfa/setup') return json(200, { secret: 'JBSW Y3DP EHPK 3PXP JBSW Y3DP EHPK 3PXP', otpauthUri: 'otpauth://totp/Shikshit:asha.verma?secret=JBSWY3DPEHPK3PXP' });
     if (path === '/me/mfa') return json(200, { enabled: true, required: true, recoveryCodesLeft: 9 });
     if (path === '/auth/login') return json(401, { code: 'invalid_credentials', detail: 'Incorrect username or password.' });
+    if (path === '/auth/support-visit') return json(200, { accessToken: 'visit1', accessTokenExpiresAt: new Date(Date.now() + 18e5).toISOString(), refreshTokenExpiresAt: new Date(Date.now() + 18e5).toISOString(), mustChangePassword: false });
+    if (path === '/me/access' && route.request().headers()['authorization'] === 'Bearer visit1')
+      return json(200, { user: { id: 'p1', name: 'Rohan Mehta', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'stu', 'iam'] }, visit: { by: 'Rohan Mehta', reason: 'Fees report shows the wrong total for class 5', expiresAt: new Date(Date.now() + 18e5).toISOString() }, permissions: permissions.filter((p) => p.endsWith('.view')), scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 0 });
     if (path === '/me/access')
       return json(200, { user: { id: 'u1', name: 'Asha Verma', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'stu', 'iam'] }, permissions, scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 1 });
     if (path === '/scope-assignments') return json(200, { items: [
@@ -136,6 +139,9 @@ const screens = [
   { name: 'console-institutes', path: '/console', signedIn: true, ready: 'text=Gurukul Vidyalaya, Pune' },
   { name: 'console-new', path: '/console/new', signedIn: true, ready: 'text=New institute', then: async (p) => { await p.getByLabel(/^School name/).fill('Delhi Public School, Dwarka'); } },
   { name: 'console-detail', path: '/console/institutes/i1', signedIn: true, ready: 'text=Save modules' },
+  { name: 'support-visit-banner', path: '/support-visit?code=' + 'c'.repeat(64), signedIn: false, ready: 'text=Read-only support visit' },
+  { name: 'support-visit-users', path: '/support-visit?code=' + 'c'.repeat(64), signedIn: false, ready: 'text=Read-only support visit', then: async (p) => { const menu = p.getByRole('button', { name: 'Open menu' }); if (await menu.isVisible()) await menu.click(); await p.getByRole('link', { name: 'Users' }).last().click(); await p.waitForSelector('text=Ravi Nair'); } },
+  { name: 'console-visit-dialog', path: '/console/institutes/i1', signedIn: true, ready: 'text=Save modules', then: async (p) => { await p.getByRole('button', { name: /View as school/ }).click(); await p.getByRole('textbox', { name: 'Reason' }).fill('Fees report shows the wrong total for class 5'); } },
   { name: 'palette', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: (p) => p.keyboard.press('Control+k').then(() => p.waitForSelector('role=dialog')) },
 ];
 const sizes = [

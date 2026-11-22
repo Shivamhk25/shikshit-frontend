@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { Circle, LogOut, Menu, Search, X } from 'lucide-react';
+import { Circle, Eye, LogOut, Menu, Search, X } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { buildNavigation, type NavNode } from '@shikshit/shared/access';
 import { appearanceFromBrand, type ThemeMode } from '@shikshit/shared/tokens';
@@ -109,6 +109,25 @@ function Sidebar({ nav, tenantName, userName, onSignOut, onSearch }: { nav: NavN
   );
 }
 
+/** Shown on every screen during a read-only support visit (SAD-05): who is visiting, why, and until when. */
+function VisitBanner({ visit, onEnd }: { visit: { by: string; reason: string; expiresAt: string }; onEnd: () => void }) {
+  const until = new Date(visit.expiresAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  return (
+    <div role="status" className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-warning-line bg-warning-bg px-4 py-2.5 text-sm text-fg sm:px-8">
+      <span className="flex flex-1 items-center gap-2 font-semibold text-warning sm:flex-none">
+        <Eye aria-hidden="true" className="size-4" />
+        Read-only support visit
+      </span>
+      <span className="order-last w-full text-fg-muted sm:order-none sm:w-auto sm:min-w-0 sm:flex-1">
+        <span className="font-medium text-fg">{visit.by}</span> from Shikshit · “{visit.reason}” · ends at {until}. Nothing can be changed, and every page viewed is recorded for the school.
+      </span>
+      <Button size="sm" variant="secondary" onClick={onEnd}>
+        End visit
+      </Button>
+    </div>
+  );
+}
+
 /** Sign-in gate and layout. Navigation comes from the server's access payload, filtered by what this build can render. */
 export function AppShell() {
   const access = useAccessState();
@@ -184,6 +203,7 @@ export function AppShell() {
           </div>
         ) : null}
         <div className="flex min-h-screen flex-col lg:pl-64">
+          {payload.visit ? <VisitBanner visit={payload.visit} onEnd={() => void signOut()} /> : null}
           <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line-subtle bg-canvas/85 px-4 backdrop-blur-sm sm:px-8 lg:hidden">
             <button type="button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Close menu' : 'Open menu'} className="flex size-9 items-center justify-center rounded-md text-fg-muted hover:bg-subtle hover:text-fg">
               {menuOpen ? <X aria-hidden="true" className="size-5" /> : <Menu aria-hidden="true" className="size-5" />}

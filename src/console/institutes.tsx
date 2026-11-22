@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Building2, Check, ChevronLeft, ChevronRight, Copy, Inbox, Plus, Search } from 'lucide-react';
+import { ArrowLeft, Building2, Check, ChevronLeft, ChevronRight, Copy, Eye, Inbox, Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Card, ConfirmDialog, Input, PageHeader, cx } from '../design-system';
 import { ApiError } from '../crud/client';
@@ -96,6 +96,7 @@ function useApi() {
       create: (body: unknown) => call<Institute & { adminUsername: string; adminInviteLink: string }>('POST', '/platform/institutes', body),
       setStatus: (id: string, status: InstituteStatus) => call<Institute>('POST', `/platform/institutes/${id}/status`, { status }),
       setModules: (id: string, modules: string[]) => call<Institute>('PUT', `/platform/institutes/${id}/modules`, { modules }),
+      startVisit: (id: string, reason: string) => call<{ visitId: string; code: string; instituteCode: string; expiresAt: string }>('POST', `/platform/institutes/${id}/visits`, { reason }),
     };
   }, [session]);
 }
@@ -439,6 +440,7 @@ export function InstituteDetailPage() {
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState<(typeof MOVES)[InstituteStatus][number] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [visiting, setVisiting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -503,11 +505,21 @@ export function InstituteDetailPage() {
       <PageHeader
         title={inst.name}
         description={address ?? inst.code}
-        actions={MOVES[inst.status].map((m) => (
-          <Button key={m.to} variant={m.danger ? 'danger' : 'primary'} disabled={busy} onClick={() => (m.confirm ? setConfirming(m) : void move(m.to))}>
-            {m.label}
-          </Button>
-        ))}
+        actions={
+          <>
+            {inst.status === 'onboarding' || inst.status === 'live' ? (
+              <Button variant="secondary" onClick={() => setVisiting(true)}>
+                <Eye aria-hidden="true" className="size-4" />
+                View as school
+              </Button>
+            ) : null}
+            {MOVES[inst.status].map((m) => (
+              <Button key={m.to} variant={m.danger ? 'danger' : 'primary'} disabled={busy} onClick={() => (m.confirm ? setConfirming(m) : void move(m.to))}>
+                {m.label}
+              </Button>
+            ))}
+          </>
+        }
       />
       <div className="grid gap-4 sm:grid-cols-3">
         <Card className="space-y-1 p-5">
@@ -553,6 +565,7 @@ export function InstituteDetailPage() {
           })}
         </fieldset>
       </Card>
+      {visiting ? <VisitDialog institute={inst} start={(reason) => api.startVisit(id, reason)} onClose={() => setVisiting(false)} /> : null}
       {confirming ? (
         <ConfirmDialog open title={`${confirming.label} ${inst.name}?`} onClose={() => setConfirming(null)}>
           <p className="text-sm text-fg-muted">{confirming.confirm}</p>
@@ -567,5 +580,79 @@ export function InstituteDetailPage() {
         </ConfirmDialog>
       ) : null}
     </section>
+  );
+}
+
+/** SAD-05 (decision 0018): a read-only visit to the school, after a reason the school will see. */
+function VisitDialog({ institute, start, onClose }: { institute: Institute; start: (reason: string) => Promise<{ code: string; instituteCode: string; expiresAt: string }>; onClose: () => void }) {
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [link, setLink] = useState<{ url: string; full: boolean; until: string } | null>(null);
+  const submit = async () => {
+    if (reason.trim().length < 10) {
+      setError('Give a reason of at least 10 characters. The school sees it.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      const v = await start(reason.trim());
+      const path = `/support-visit?code=${v.code}`;
+      const full = instituteUrl(v.instituteCode, path);
+      const until = new Date(v.expiresAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+      if (full) window.open(full, '_blank', 'noopener');
+      setLink({ url: full ?? path, full: !!full, until });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <ConfirmDialog open title={`View ${institute.name} as the school`} onClose={onClose} className="max-w-lg">
+      {link ? (
+        <div className="space-y-3">
+          <p className="text-sm text-fg-muted">
+            The visit is read-only and ends at {link.until}. {link.full ? 'It opened in a new tab. If it did not, open this link:' : 'Open this link on the school’s own address:'}
+          </p>
+          <p className="break-all rounded-md border border-line-subtle bg-canvas p-3 font-mono text-xs text-fg" data-testid="visit-link">
+            {link.url}
+          </p>
+          <p className="text-xs text-fg-subtle">The link works once. Every page you view is recorded in the school&apos;s audit trail with your reason.</p>
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <p className="text-sm text-fg-muted">You see what the school&apos;s Admin sees, for 30 minutes, and cannot change anything. The school sees your name, your reason and every page you open.</p>
+          <label className="block space-y-1.5 text-sm">
+            <span className="font-medium text-fg">Reason</span>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="For example: the fees report shows the wrong total for class 5"
+              className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg shadow-soft placeholder:text-fg-subtle focus-visible:border-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent-subtle"
+            />
+          </label>
+          {error ? (
+            <p role="alert" className="text-sm text-danger">
+              {error}
+            </p>
+          ) : null}
+          <div className="flex gap-2">
+            <Button loading={busy} onClick={() => void submit()}>
+              Start visit
+            </Button>
+            <Button variant="secondary" onClick={onClose}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+    </ConfirmDialog>
   );
 }
