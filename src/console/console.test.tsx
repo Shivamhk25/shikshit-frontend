@@ -47,6 +47,7 @@ function mount({ signedIn = true, path = '/' } = {}) {
       inst = { ...inst, modules: [...body.modules].sort() };
       return json(200, inst);
     }
+    if (p === '/platform/institutes/i1/visits') return body.reason.length < 10 ? json(400, { code: 'validation_failed', detail: 'Give a reason.' }) : json(201, { visitId: 'v1', code: 'k'.repeat(64), instituteCode: 'gamma', expiresAt: new Date(Date.now() + 18e5).toISOString() });
     if (p === '/platform/institutes/i1') return json(200, inst);
     return json(404, {});
   }) as typeof fetch;
@@ -132,6 +133,18 @@ describe('console', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save modules' }));
     expect(await screen.findByText(/Modules saved/)).toBeInTheDocument();
     expect((calls.find((c) => c.path === '/platform/institutes/i1/modules')?.body as { modules: string[] }).modules.sort()).toEqual(['aca', 'iam', 'lib']);
+  });
+
+  it('starts a read-only visit only after a reason', async () => {
+    const calls = mount({ path: '/institutes/i1' });
+    await userEvent.click(await screen.findByRole('button', { name: /View as school/ }));
+    const dialog = screen.getByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Start visit' }));
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('at least 10 characters');
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Reason' }), 'Attendance export is empty for June');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Start visit' }));
+    expect(await within(dialog).findByTestId('visit-link')).toHaveTextContent('/support-visit?code=' + 'k'.repeat(64));
+    expect(calls.find((c) => c.path === '/platform/institutes/i1/visits')?.body).toEqual({ reason: 'Attendance export is empty for June' });
   });
 
   it('suggests an address code from a school name', () => {
