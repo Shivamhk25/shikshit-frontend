@@ -1,10 +1,12 @@
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import type { Session } from '@shikshit/shared/session';
 import { AccessProvider } from './AccessProvider';
 import { AppShell } from './AppShell';
 import { AuthProvider, useAuth } from './AuthProvider';
 import { HomePage, NotAvailablePage, OnboardingPage, ProfilePage, RequirePermission } from './pages';
 import { SignInPage } from './SignInPage';
+import { AcceptInvitePage } from './AcceptInvitePage';
+import { UsersPage } from '../features/iam/UsersPage';
 import { RoomsPage } from '../features/aca/RoomsPage';
 import { ResourcePage } from '../features/aca/ResourcePage';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
@@ -14,6 +16,9 @@ import { classesDescriptor, sectionsDescriptor, subjectsDescriptor, termsDescrip
 
 function Gate() {
   const { status } = useAuth();
+  const { pathname } = useLocation();
+  // Invite and reset links work whether or not someone is signed in on this browser.
+  if (pathname === '/accept-invite') return <AcceptInvitePage />;
   if (status === 'unknown') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-canvas text-fg-muted" role="status">
@@ -193,6 +198,14 @@ function Gate() {
             element={
               <RequirePermission path="/student-addresses">
                 <ResourcePage descriptor={addressesDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="users"
+            element={
+              <RequirePermission path="/users">
+                <UsersPage />
               </RequirePermission>
             }
           />
