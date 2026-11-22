@@ -48,6 +48,9 @@ function fakeServer(permissions: string[], initial: User[]) {
       users.push(u);
       return json(201, { ...u, inviteLink: '/accept-invite?token=abc123' });
     }
+    if (path === '/roles') return json(200, { items: [{ id: 'r-adm', code: 'admin', name: 'Admin', description: null, isSystem: true, holderCount: 1, permissionCount: 9, updatedAt: '' }, { id: 'r-clerk', code: 'clerk', name: 'Clerk', description: 'Front office', isSystem: false, holderCount: 0, permissionCount: 2, updatedAt: '' }] });
+    if (/^\/users\/[^/]+\/roles$/.test(path) && method === 'GET') return json(200, { items: [] });
+    if (/^\/users\/[^/]+\/roles$/.test(path) && method === 'PUT') return json(200, { items: [] });
     const m = /^\/users\/([^/]+)\/(.+)$/.exec(path);
     if (m && method === 'POST') {
       const u = users.find((x) => x.id === m[1])!;
@@ -78,6 +81,7 @@ describe('users page', () => {
     expect(await screen.findByText('Person u1')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Add user/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Actions' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Roles of/ })).not.toBeInTheDocument();
   });
 
   it('offers only the actions the server accepts for each status, and never disabling yourself', async () => {
@@ -111,6 +115,14 @@ describe('users page', () => {
     await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Disable' }));
     expect(await screen.findByText('Disabled', { selector: 'span' })).toBeInTheDocument();
     expect(server.calls.some((c) => c.method === 'POST' && c.path === '/users/u1/deactivate')).toBe(true);
+  });
+
+  it('gives a user roles from the shield button, only for those who may see roles', async () => {
+    const server = mount([...ALL, 'iam.roles.view'], [user('u1')]);
+    await userEvent.click(within(await row('Person u1')).getByRole('button', { name: 'Roles of Person u1' }));
+    await userEvent.click(await screen.findByRole('checkbox', { name: /Clerk/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save roles' }));
+    expect(server.calls.find((c) => c.method === 'PUT')).toEqual({ method: 'PUT', path: '/users/u1/roles', body: { roleIds: ['r-clerk'] } });
   });
 
   it('shows the reset link once it is issued', async () => {

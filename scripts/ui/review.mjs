@@ -20,9 +20,10 @@ const nav = [
   { screenId: 'students', label: 'Students', order: 40 },
   { screenId: 'guardians', label: 'Guardians', order: 42 },
   { screenId: 'users', label: 'Users', order: 61 },
+  { screenId: 'roles', label: 'Roles', order: 62 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
-const permissions = ['onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit'];
+const permissions = ['onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete'];
 const students = [
   { id: '1', registrationCode: 'R-0001', firstName: 'Asha', fullName: 'Asha Rao', gender: 'female', dateOfBirth: '2015-06-01', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '1' },
   { id: '2', registrationCode: 'R-0002', firstName: 'Kabir', fullName: 'Kabir Mehta', gender: 'male', dateOfBirth: '2015-02-11', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '2' },
@@ -34,6 +35,20 @@ const users = [
   { id: 'u3', username: 'p.sharma', displayName: 'Priya Sharma', email: null, phone: '9876543210', status: 'locked', lockedUntil: null, lastLoginAt: '2026-10-02T07:40:00Z' },
   { id: 'u4', username: 'k.das', displayName: 'Kunal Das', email: null, phone: null, status: 'disabled', lockedUntil: null, lastLoginAt: '2026-06-14T11:05:00Z' },
 ];
+const catalog = [
+  ...['view', 'create', 'edit', 'delete', 'export'].map((a) => ({ code: `iam.users.${a}`, module: 'iam', resource: 'users', action: a, sensitive: false })),
+  ...['view', 'create', 'edit', 'delete'].map((a) => ({ code: `iam.roles.${a}`, module: 'iam', resource: 'roles', action: a, sensitive: false })),
+  ...['view', 'edit'].map((a) => ({ code: `iam.scope_assignments.${a}`, module: 'iam', resource: 'scope_assignments', action: a, sensitive: false })),
+  ...['view', 'create', 'edit', 'delete', 'export'].map((a) => ({ code: `stu.students.${a}`, module: 'stu', resource: 'students', action: a, sensitive: true })),
+  ...['view', 'create', 'edit', 'delete'].map((a) => ({ code: `stu.student_addresses.${a}`, module: 'stu', resource: 'student_addresses', action: a, sensitive: true })),
+  ...['view', 'create', 'edit', 'delete'].map((a) => ({ code: `stu.student_documents.${a}`, module: 'stu', resource: 'student_documents', action: a, sensitive: true })),
+];
+const roles = [
+  { id: 'r1', code: 'admin', name: 'Admin', description: 'Full visibility and management inside the institute.', isSystem: true, holderCount: 2, permissionCount: 27, updatedAt: '2026-11-01T00:00:00Z' },
+  { id: 'r2', code: 'teacher', name: 'Teacher', description: 'Their own class sections.', isSystem: true, holderCount: 38, permissionCount: 6, updatedAt: '2026-11-01T00:00:00Z' },
+  { id: 'r3', code: 'front_office', name: 'Front office', description: 'Admissions desk and student records.', isSystem: false, holderCount: 3, permissionCount: 9, updatedAt: '2026-11-18T00:00:00Z' },
+];
+const frontOffice = { ...roles[2], grants: [{ permission: 'stu.students.view', scope: 'tenant' }, { permission: 'stu.students.create', scope: 'tenant' }, { permission: 'stu.students.edit', scope: 'tenant' }, { permission: 'stu.student_addresses.view', scope: 'tenant' }, { permission: 'iam.users.view', scope: 'tenant' }] };
 
 async function mockApi(page, signedIn) {
   await page.route('**/api/v1/**', (route) => {
@@ -44,6 +59,9 @@ async function mockApi(page, signedIn) {
     if (path === '/auth/login') return json(401, { code: 'invalid_credentials', detail: 'Incorrect username or password.' });
     if (path === '/me/access')
       return json(200, { user: { id: 'u1', name: 'Asha Verma', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'stu', 'iam'] }, permissions, scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 1 });
+    if (path === '/permissions/catalog') return json(200, { items: catalog });
+    if (path === '/roles') return json(200, { items: roles });
+    if (path === '/roles/r3') return json(200, frontOffice);
     if (path === '/users' && route.request().method() === 'POST') return json(201, { ...users[1], id: 'u9', inviteLink: '/accept-invite?token=3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b' });
     if (path === '/users') return json(200, { items: users, page: { number: 1, size: 25, total: users.length } });
     if (path === '/students') return json(200, { items: students, page: { number: 1, size: 25, total: students.length } });
@@ -59,6 +77,8 @@ const screens = [
   { name: 'users', path: '/users', signedIn: true, ready: 'text=Ravi Nair' },
   { name: 'users-invite-link', path: '/users', signedIn: true, ready: 'text=Ravi Nair', then: async (p) => { await p.getByRole('button', { name: 'Add user' }).click(); await p.getByLabel('Username').fill('r.nair2'); await p.getByLabel('Display name').fill('Ravi Nair'); await p.getByRole('button', { name: 'Add and get invite link' }).click(); await p.waitForSelector('[data-testid=one-time-link]'); } },
   { name: 'accept-invite', path: '/accept-invite?token=abc', signedIn: false, ready: 'text=Set your password' },
+  { name: 'roles', path: '/roles', signedIn: true, ready: 'text=Front office' },
+  { name: 'role-matrix', path: '/roles', signedIn: true, ready: 'text=Front office', then: async (p) => { await p.getByRole('button', { name: 'Edit Front office' }).click(); await p.waitForSelector('text=Who students reaches', { state: 'attached' }).catch(() => {}); await p.getByRole('checkbox', { name: 'Delete Students' }).click(); } },
   { name: 'palette', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: (p) => p.keyboard.press('Control+k').then(() => p.waitForSelector('role=dialog')) },
 ];
 const sizes = [
