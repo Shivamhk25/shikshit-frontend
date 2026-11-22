@@ -98,6 +98,12 @@ async function mockApi(page, signedIn, mfa) {
     ] });
     if (path === '/platform/auth/refresh') return signedIn ? json(200, tokens) : json(400, { code: 'validation_failed' });
     if (path === '/platform/me') return json(200, { id: 'p1', email: 'ops@shikshit.app', name: 'Rohan Mehta' });
+    if (path === '/platform/users') return json(200, { items: [
+      { id: 'p1', email: 'ops@shikshit.app', name: 'Rohan Mehta', status: 'active', mfaEnabled: true, lastLoginAt: '2026-11-22T08:00:00Z', createdAt: '' },
+      { id: 'p2', email: 'meera@shikshit.app', name: 'Meera Iyer', status: 'active', mfaEnabled: true, lastLoginAt: '2026-11-20T08:00:00Z', createdAt: '' },
+      { id: 'p3', email: 'kabir@shikshit.app', name: 'Kabir Rao', status: 'invited', mfaEnabled: false, lastLoginAt: null, createdAt: '' },
+      { id: 'p4', email: 'anita@shikshit.app', name: 'Anita Das', status: 'disabled', mfaEnabled: true, lastLoginAt: '2026-08-01T08:00:00Z', createdAt: '' },
+    ] });
     if (path === '/platform/plans') return json(200, { items: platformPlans });
     if (path === '/platform/institutes' && route.request().method() === 'POST') return json(201, { ...platformInstitutes[1], id: 'n1', adminUsername: 'meena', adminInviteLink: '/accept-invite?token=3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b' });
     if (path === '/platform/institutes') return json(200, { items: platformInstitutes, page: { number: 1, size: 25, total: platformInstitutes.length } });
@@ -142,6 +148,8 @@ const screens = [
   { name: 'support-visit-banner', path: '/support-visit?code=' + 'c'.repeat(64), signedIn: false, ready: 'text=Read-only support visit' },
   { name: 'support-visit-users', path: '/support-visit?code=' + 'c'.repeat(64), signedIn: false, ready: 'text=Read-only support visit', then: async (p) => { const menu = p.getByRole('button', { name: 'Open menu' }); if (await menu.isVisible()) await menu.click(); await p.getByRole('link', { name: 'Users' }).last().click(); await p.waitForSelector('text=Ravi Nair'); } },
   { name: 'console-visit-dialog', path: '/console/institutes/i1', signedIn: true, ready: 'text=Save modules', then: async (p) => { await p.getByRole('button', { name: /View as school/ }).click(); await p.getByRole('textbox', { name: 'Reason' }).fill('Fees report shows the wrong total for class 5'); } },
+  { name: 'console-team', path: '/console/team', signedIn: true, ready: 'text=Kabir Rao' },
+  { name: 'console-accept-invite', path: '/console/accept-invite?token=abc', signedIn: false, ready: 'text=Set your password' },
   { name: 'palette', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: (p) => p.keyboard.press('Control+k').then(() => p.waitForSelector('role=dialog')) },
 ];
 const sizes = [
