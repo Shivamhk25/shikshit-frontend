@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
-import { Building2, Lock, LogOut, Mail, ShieldCheck } from 'lucide-react';
+import { Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Building2, Lock, LogOut, Mail, ShieldCheck, Users } from 'lucide-react';
 import { Toaster } from 'sonner';
 import { Button, Input, Logo, ThemeProvider, cx } from '../design-system';
 import { CodeInput, SecretPanel } from '../shell/mfa';
 import { createPlatformSession, type Challenge, type PlatformMe, type PlatformSession } from './platform-session';
 import { InstituteDetailPage, InstitutesPage, NewInstitutePage } from './institutes';
+import { ConsoleAcceptInvite, TeamPage } from './team';
 
 /** The Super Admin console (SAD-01..03, decision 0017): its own sign-in, always two-step, and its own session. */
 
@@ -20,9 +21,11 @@ export function useConsole() {
   return c;
 }
 
-export function ConsoleApp({ session: injected }: { session?: PlatformSession }) {
+export function ConsoleApp({ session: injected, fetchFn }: { session?: PlatformSession; fetchFn?: typeof fetch }) {
   const session = useMemo(() => injected ?? createPlatformSession(), [injected]);
   const [state, setState] = useState<State>({ phase: 'loading' });
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
 
   const loadMe = async () => {
     const res = await session.fetch('/platform/me');
@@ -43,7 +46,9 @@ export function ConsoleApp({ session: injected }: { session?: PlatformSession })
   return (
     <ThemeProvider initialChoice="light">
       <ConsoleContext.Provider value={value}>
-        {state.phase === 'loading' ? (
+        {pathname === '/accept-invite' ? (
+          <ConsoleAcceptInvite fetchFn={fetchFn} onDone={() => navigate('/', { replace: true })} />
+        ) : state.phase === 'loading' ? (
           <div role="status" className="flex min-h-screen items-center justify-center bg-canvas text-sm text-fg-muted">
             Loading…
           </div>
@@ -55,6 +60,7 @@ export function ConsoleApp({ session: injected }: { session?: PlatformSession })
               <Route index element={<InstitutesPage />} />
               <Route path="new" element={<NewInstitutePage />} />
               <Route path="institutes/:id" element={<InstituteDetailPage />} />
+              <Route path="team" element={<TeamPage />} />
               <Route path="*" element={<InstitutesPage />} />
             </Routes>
           </ConsoleShell>
@@ -71,7 +77,7 @@ function ConsoleShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-canvas text-fg">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-brand-ink text-white">
-        <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-8">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:gap-6 sm:px-8">
           <Link to="/" className="flex items-center gap-3" aria-label="Institutes">
             <Logo tone="light" size={28} />
             <span className="hidden rounded-full border border-brand-gold/40 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-gold-soft sm:inline">Platform</span>
@@ -79,7 +85,13 @@ function ConsoleShell({ children }: { children: ReactNode }) {
           <nav className="flex flex-1 items-center gap-1 text-sm">
             <NavLink end to="/" className={({ isActive }) => cx('flex items-center gap-2 rounded-md px-3 py-1.5', isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white')}>
               <Building2 aria-hidden="true" className="size-4" />
-              Institutes
+              <span className="hidden sm:inline">Institutes</span>
+              <span className="sr-only sm:hidden">Institutes</span>
+            </NavLink>
+            <NavLink to="/team" className={({ isActive }) => cx('flex items-center gap-2 rounded-md px-3 py-1.5', isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white')}>
+              <Users aria-hidden="true" className="size-4" />
+              <span className="hidden sm:inline">Team</span>
+              <span className="sr-only sm:hidden">Team</span>
             </NavLink>
           </nav>
           <span className="hidden text-sm text-white/70 md:inline">{me?.name}</span>
