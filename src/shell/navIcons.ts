@@ -1,5 +1,5 @@
 import {
-  BarChart3, BookMarked, ClipboardCheck, FileUser, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList,
+  ArrowRightLeft, BarChart3, BookMarked, ClipboardCheck, FileUser, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList,
   Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, HeartHandshake, Home, Layers, Link2, MessagesSquare,
   Palette, ListChecks, ListOrdered, MapPin, School, ShieldCheck, Sun, Upload, UserCheck, UserCog, UserRound,
   UserSearch, Users, UserRoundCheck, TrendingUp, type LucideIcon,
@@ -35,6 +35,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   student_guardians: Link2,
   student_addresses: MapPin,
   promotions: TrendingUp,
+  transfers: ArrowRightLeft,
   scope_assignments: UserCheck,
   users: UserCog,
   roles: ShieldCheck,
@@ -75,6 +76,7 @@ export const NAV_BLURBS: Record<string, string> = {
   student_guardians: 'Who looks after which student.',
   student_addresses: 'Home and mailing addresses.',
   promotions: 'Move a class up, repeat it or graduate it at the end of the year.',
+  transfers: 'Students leaving the school, from request to transfer certificate.',
   scope_assignments: 'Which class sections each teacher looks after.',
   users: 'Who can sign in, with invites and password resets.',
   roles: 'What each kind of staff member can see and do.',
