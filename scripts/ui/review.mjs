@@ -18,6 +18,7 @@ const nav = [
   { screenId: 'academic_years', label: 'Academic years', order: 21 },
   { screenId: 'classes', label: 'Classes', order: 23 },
   { screenId: 'enquiries', label: 'Enquiries', order: 35 },
+  { screenId: 'enquiry_discussions', label: 'Enquiry discussions', order: 36 },
   { screenId: 'students', label: 'Students', order: 40 },
   { screenId: 'guardians', label: 'Guardians', order: 42 },
   { screenId: 'scope_assignments', label: 'Class assignments', order: 60 },
@@ -28,7 +29,7 @@ const nav = [
   { screenId: 'approvals', label: 'Approvals', order: 70 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
-const permissions = ['onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage'];
+const permissions = ['onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage'];
 const students = [
   { id: '1', registrationCode: 'R-0001', firstName: 'Asha', fullName: 'Asha Rao', gender: 'female', dateOfBirth: '2015-06-01', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '1' },
   { id: '2', registrationCode: 'R-0002', firstName: 'Kabir', fullName: 'Kabir Mehta', gender: 'male', dateOfBirth: '2015-02-11', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '2' },
@@ -41,6 +42,13 @@ const enquiries = [
   enquiry('103', { enquirerName: 'Rahul Singh', childName: 'Diya Singh', className: 'UKG', source: 'referral', status: 'converted' }),
   enquiry('104', { enquirerName: 'Meena Iyer', childName: 'Kabir Iyer', className: null, source: 'social', status: 'closed' }),
   enquiry('105', { enquirerName: 'Priya Sharma', childName: 'Aarav Sharma', className: 'Class 3', source: 'phone', phone: '9822234567' }),
+];
+const discussion = (id, o) => ({ id, enquiryId: '101', enquiryCode: 'ENQ-000101', enquiryChildName: 'Anaya Kumar', contactedAt: '2026-11-20T09:00:00Z', channel: 'call', summary: 'Asked about the fee for Nursery', notes: null, outcome: 'interested', nextFollowUpDate: null, language: 'hi', loggedById: 'u1', loggedByName: 'Asha Verma', createdAt: '2026-11-20T09:05:00Z', updatedAt: '2026-11-20T09:05:00Z', ...o });
+const discussions = [
+  discussion('d1', { contactedAt: '2026-11-22T11:15:00Z', channel: 'visit', summary: 'Visited the campus with both parents', notes: 'Liked the activity room. Wants to know about the school bus route from Sector 14.', outcome: 'visit_scheduled', language: 'en', nextFollowUpDate: '2026-11-29' }),
+  discussion('d2', { contactedAt: '2026-11-20T09:00:00Z' }),
+  discussion('d3', { enquiryId: '102', enquiryCode: 'ENQ-000102', enquiryChildName: 'Ishaan Verma', contactedAt: '2026-11-19T14:40:00Z', channel: 'whatsapp', summary: 'Sent the fee structure and prospectus', outcome: 'call_back_later', language: 'mr', loggedByName: 'Ravi Nair', nextFollowUpDate: '2026-12-02' }),
+  discussion('d4', { enquiryId: '104', enquiryCode: 'ENQ-000104', enquiryChildName: 'Kabir Iyer', contactedAt: '2026-11-18T05:30:00Z', channel: 'call', summary: 'Phone was switched off', outcome: 'not_reachable', language: 'ta', loggedByName: 'Ravi Nair' }),
 ];
 const users = [
   { id: 'u1', username: 'asha.verma', displayName: 'Asha Verma', email: 'asha@springfield.edu.in', phone: null, status: 'active', lockedUntil: null, lastLoginAt: '2026-11-20T09:12:00Z' },
@@ -181,6 +189,11 @@ async function mockApi(page, signedIn, mfa) {
     if (path === '/users' && route.request().method() === 'POST') return json(201, { ...users[1], id: 'u9', inviteLink: '/accept-invite?token=3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b', email: 'ravi.nair@school.test', emailQueued: true });
     if (path === '/users') return json(200, { items: users, page: { number: 1, size: 25, total: users.length } });
     if (path.endsWith('/photo') && path.startsWith('/students/')) return json(200, { url: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#c9b79c"/><circle cx="32" cy="26" r="12" fill="#8a7458"/><rect x="12" y="42" width="40" height="22" rx="11" fill="#8a7458"/></svg>'), expiresAt: '' });
+    if (path === '/enquiry-discussions') {
+      const e = new URL(route.request().url()).searchParams.get('enquiryId');
+      const items = e ? discussions.filter((d) => d.enquiryId === e) : discussions;
+      return json(200, { items, page: { number: 1, size: 25, total: items.length } });
+    }
     if (path === '/enquiries') return json(200, { items: enquiries, page: { number: 1, size: 25, total: enquiries.length } });
     if (path === '/classes') return json(200, { items: [{ id: 'c1', name: 'Nursery' }, { id: 'c2', name: 'Class 1' }], page: { number: 1, size: 200, total: 2 } });
     if (path === '/students') return json(200, { items: students, page: { number: 1, size: 25, total: students.length } });
@@ -195,6 +208,10 @@ const screens = [
   { name: 'students-add', path: '/students', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: 'Add student' }).click().then(() => p.waitForSelector('role=dialog')) },
   { name: 'enquiries', path: '/enquiries', signedIn: true, ready: 'text=Ishaan Verma' },
   { name: 'enquiries-add', path: '/enquiries', signedIn: true, ready: 'text=Ishaan Verma', then: (p) => p.getByRole('button', { name: 'Add enquiry' }).click().then(() => p.waitForSelector('role=dialog')) },
+  { name: 'enquiry-discussions', path: '/enquiry-discussions', signedIn: true, ready: 'text=Visited the campus with both parents' },
+  { name: 'enquiry-discussions-add', path: '/enquiry-discussions', signedIn: true, ready: 'text=Visited the campus with both parents', then: (p) => p.getByRole('button', { name: 'Add discussion' }).click().then(() => p.waitForSelector('role=dialog')) },
+  { name: 'enquiry-edit-notes', path: '/enquiries', signedIn: true, ready: 'text=Ishaan Verma', then: async (p) => { await p.getByRole('button', { name: /^Edit ENQ-101/ }).click(); await p.waitForSelector('text=Visited the campus with both parents'); } },
+  { name: 'enquiry-log-contact', path: '/enquiries', signedIn: true, ready: 'text=Ishaan Verma', then: async (p) => { await p.getByRole('button', { name: /^Edit ENQ-101/ }).click(); await p.getByRole('button', { name: 'Log a contact' }).click(); await p.getByRole('dialog', { name: 'Log a contact' }).waitFor(); } },
   { name: 'users', path: '/users', signedIn: true, ready: 'text=Ravi Nair' },
   { name: 'users-invite-link', path: '/users', signedIn: true, ready: 'text=Ravi Nair', then: async (p) => { await p.getByRole('button', { name: 'Add user' }).click(); await p.getByLabel('Username').fill('r.nair2'); await p.getByLabel('Display name').fill('Ravi Nair'); await p.getByRole('button', { name: 'Add and get invite link' }).click(); await p.waitForSelector('[data-testid=one-time-link]'); } },
   { name: 'accept-invite', path: '/accept-invite?token=abc', signedIn: false, ready: 'text=Set your password' },

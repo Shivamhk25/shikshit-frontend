@@ -1,4 +1,7 @@
+import { createElement } from 'react';
 import type { CrudDescriptor, FormValues } from '../../crud/descriptor';
+import { formatDate } from './dates';
+import { EnquiryDiscussions } from './EnquiryDiscussions';
 
 export type EnquirySource = 'walk_in' | 'phone' | 'website' | 'referral' | 'social' | 'other';
 export type EnquiryStatus = 'new' | 'contacted' | 'visit_scheduled' | 'converted' | 'closed';
@@ -45,14 +48,7 @@ export const STATUSES: { value: EnquiryStatus; label: string }[] = [
 ];
 
 const statusLabel = (v: string) => STATUSES.find((s) => s.value === v)?.label ?? v;
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/** "2026-11-22" as "22 Nov 2026", read from the text so the viewer's time zone cannot shift the day. */
-export function formatDate(iso: string | null): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
-  if (!m) return '—';
-  return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1] ?? ''} ${m[1]}`;
-}
+export { formatDate };
 
 /** The follow-up date, with "overdue" beside it when the server says the follow-up is due. */
 export const followUpText = (r: Enquiry) => (r.followUpDate ? `${formatDate(r.followUpDate)}${r.followUpDue ? ' · due' : ''}` : '—');
@@ -67,7 +63,7 @@ export const enquiriesDescriptor: CrudDescriptor<Enquiry> = {
   endpoint: '/enquiries',
   permissions: { view: 'adm.enquiry.view', create: 'adm.enquiry.create', edit: 'adm.enquiry.edit', delete: 'adm.enquiry.delete' },
   defaultSort: '-createdAt',
-  searchPlaceholder: 'Search by code, name, phone or email',
+  searchPlaceholder: 'Search by number, name, phone or email',
   label: (r) => `${r.code} · ${r.childName}`,
   filters: [
     { key: 'status', label: 'Status', kind: 'select', options: STATUSES },
@@ -76,7 +72,7 @@ export const enquiriesDescriptor: CrudDescriptor<Enquiry> = {
     { key: 'followUpDue', label: 'Follow-up due', kind: 'toggle' },
   ],
   columns: [
-    { key: 'code', label: 'Code', sort: 'code' },
+    { key: 'code', label: 'Enquiry no.', sort: 'code' },
     { key: 'childName', label: 'Child', sort: 'childName' },
     { key: 'enquirerName', label: 'Enquirer', sort: 'enquirerName' },
     { key: 'phone', label: 'Phone' },
@@ -86,7 +82,6 @@ export const enquiriesDescriptor: CrudDescriptor<Enquiry> = {
     { key: 'status', label: 'Status', sort: 'status', render: (r) => statusLabel(r.status) },
   ],
   fields: [
-    { key: 'code', label: 'Code', kind: 'text', required: true, maxLength: 20, hint: 'Your own reference for this enquiry. It must be unique.' },
     { key: 'childName', label: 'Child’s name', kind: 'text', required: true, maxLength: 150 },
     { key: 'dateOfBirth', label: 'Child’s date of birth', kind: 'date' },
     { key: 'enquirerName', label: 'Enquirer’s name', kind: 'text', required: true, maxLength: 150, hint: 'The parent or guardian who got in touch.' },
@@ -100,8 +95,14 @@ export const enquiriesDescriptor: CrudDescriptor<Enquiry> = {
     { key: 'assignedToId', label: 'Assigned to', kind: 'select', hint: 'The staff member who follows this up.', remote: { endpoint: '/users', value: 'id', label: 'displayName', detail: 'username', search: true } },
     { key: 'notes', label: 'Notes', kind: 'textarea', maxLength: 1000 },
   ],
+  editExtra: (row, form) =>
+    createElement(
+      'div',
+      { className: 'space-y-4' },
+      createElement('p', { className: 'text-sm text-fg-muted' }, 'Enquiry number ', createElement('strong', { className: 'font-semibold text-fg' }, row.code)),
+      createElement(EnquiryDiscussions, { enquiryId: row.id, onFollowUpDate: (date: string) => form.setValue('followUpDate', date) }),
+    ),
   toForm: (r): FormValues => ({
-    code: r.code,
     childName: r.childName,
     dateOfBirth: r.dateOfBirth ?? '',
     enquirerName: r.enquirerName,
@@ -116,7 +117,6 @@ export const enquiriesDescriptor: CrudDescriptor<Enquiry> = {
     notes: r.notes ?? '',
   }),
   toInput: (v) => ({
-    code: text(v.code),
     enquirerName: text(v.enquirerName),
     phone: text(v.phone),
     email: orNull(v.email),
