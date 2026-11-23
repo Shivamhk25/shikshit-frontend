@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { ChevronLeft, ChevronRight, FilePlus, Inbox, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSearchParams } from 'react-router-dom';
 import { Button, Card, ConfirmDialog, Input, PageHeader, Sheet } from '../design-system';
 import { useAccessState } from '../shell/AccessProvider';
 import { ApiError, type CrudClient } from './client';
@@ -161,6 +162,7 @@ export function CrudPage<T extends { id: string }>({
   optionsClient?: (endpoint: string) => CrudClient<Record<string, unknown> & { id: string }, never>;
 }) {
   const access = useAccessState();
+  const [urlParams] = useSearchParams();
   const can = (code: string) => access.phase === 'ready' && access.access.can(code);
   const canCreate = can(d.permissions.create);
   const canEdit = can(d.permissions.edit);
@@ -184,7 +186,10 @@ export function CrudPage<T extends { id: string }>({
   const [deleting, setDeleting] = useState<T | null>(null);
   const [notice, setNotice] = useState('');
   const [acting, setActing] = useState<{ action: RowAction<T>; row: T } | null>(null);
-  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+  // A link from another screen (for example the admissions dashboard) can open the list already filtered: ?status=new.
+  const [filterValues, setFilterValues] = useState<Record<string, string>>(() => {
+    return Object.fromEntries((d.filters ?? []).flatMap((f) => (urlParams.get(f.key) ? [[f.key, urlParams.get(f.key) as string]] : [])));
+  });
   const [filterOptions, setFilterOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const [remote, setRemote] = useState<Record<string, { value: string; label: string }[]>>({});
 

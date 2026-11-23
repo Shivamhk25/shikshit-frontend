@@ -203,16 +203,16 @@ export function AppShell() {
     <ThemeProvider {...appearanceFromBrand(payload.tenant?.brand)} initialChoice={themeChoice} onChoiceChange={saveThemeChoice}>
       <Tooltip.Provider delayDuration={300}>
         <div className="min-h-screen bg-canvas text-fg">
-        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 lg:block">{sidebar}</aside>
+        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 lg:block print:hidden">{sidebar}</aside>
         {menuOpen ? (
           <div className="fixed inset-0 z-40 lg:hidden">
             <div className="absolute inset-0 bg-overlay" onClick={() => setMenuOpen(false)} aria-hidden="true" />
             <div className="relative h-full w-72 max-w-[85%] shadow-float">{sidebar}</div>
           </div>
         ) : null}
-        <div className="flex min-h-screen flex-col lg:pl-64">
+        <div className="flex min-h-screen flex-col lg:pl-64 print:pl-0">
           {payload.visit ? <VisitBanner visit={payload.visit} onEnd={() => void signOut()} /> : null}
-          <header className={cx('sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line-subtle bg-canvas/85 px-4 backdrop-blur-sm sm:px-8', payload.visit && 'lg:hidden')}>
+          <header className={cx('sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line-subtle bg-canvas/85 px-4 backdrop-blur-sm sm:px-8', payload.visit && 'lg:hidden', 'print:hidden')}>
             <button type="button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Close menu' : 'Open menu'} className="flex size-9 items-center justify-center rounded-md text-fg-muted hover:bg-subtle hover:text-fg lg:hidden">
               {menuOpen ? <X aria-hidden="true" className="size-5" /> : <Menu aria-hidden="true" className="size-5" />}
             </button>
