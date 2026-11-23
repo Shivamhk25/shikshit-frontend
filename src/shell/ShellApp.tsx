@@ -15,6 +15,7 @@ import { ParentLinksPage } from '../features/iam/ParentLinksPage';
 import { AppearancePage } from '../features/iam/AppearancePage';
 import { RoomsPage } from '../features/aca/RoomsPage';
 import { ResourcePage } from '../features/aca/ResourcePage';
+import { enquiriesDescriptor } from '../features/adm/enquiries';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
 import { chaptersDescriptor, classSectionsDescriptor, subjectClassesDescriptor, textbooksDescriptor } from '../features/aca/mappings';
 import { campusesDescriptor, divisionsDescriptor, electivesDescriptor, eventsDescriptor, holidaysDescriptor } from '../features/aca/masters';
@@ -45,6 +46,14 @@ function Gate() {
             element={
               <RequirePermission path="/onboarding">
                 <OnboardingPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="enquiries"
+            element={
+              <RequirePermission path="/enquiries">
+                <ResourcePage descriptor={enquiriesDescriptor} />
               </RequirePermission>
             }
           />

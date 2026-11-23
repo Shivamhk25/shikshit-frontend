@@ -17,6 +17,7 @@ const nav = [
   { screenId: 'onboarding', label: 'Onboarding', order: 2 },
   { screenId: 'academic_years', label: 'Academic years', order: 21 },
   { screenId: 'classes', label: 'Classes', order: 23 },
+  { screenId: 'enquiries', label: 'Enquiries', order: 35 },
   { screenId: 'students', label: 'Students', order: 40 },
   { screenId: 'guardians', label: 'Guardians', order: 42 },
   { screenId: 'scope_assignments', label: 'Class assignments', order: 60 },
@@ -27,11 +28,19 @@ const nav = [
   { screenId: 'approvals', label: 'Approvals', order: 70 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
-const permissions = ['onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage'];
+const permissions = ['onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage'];
 const students = [
   { id: '1', registrationCode: 'R-0001', firstName: 'Asha', fullName: 'Asha Rao', gender: 'female', dateOfBirth: '2015-06-01', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '1' },
   { id: '2', registrationCode: 'R-0002', firstName: 'Kabir', fullName: 'Kabir Mehta', gender: 'male', dateOfBirth: '2015-02-11', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '2' },
   { id: '3', registrationCode: 'R-0003', firstName: 'Meera', fullName: 'Meera Iyer', gender: 'female', dateOfBirth: '2014-11-23', status: 'paused', currentClassName: 'Class 5', currentSectionName: 'B', currentRollNumber: null },
+];
+const enquiry = (id, o) => ({ id, code: `ENQ-${id}`, enquirerName: 'Sunil Kumar', phone: '9810012345', email: null, childName: 'Anaya Kumar', dateOfBirth: '2021-03-14', classId: 'c1', classCode: 'NUR', className: 'Nursery', yearId: 'y1', yearName: '2027-28', source: 'walk_in', status: 'new', followUpDate: null, followUpDue: false, notes: null, assignedToId: null, assignedToName: null, createdAt: '2026-11-18T00:00:00Z', updatedAt: '2026-11-18T00:00:00Z', ...o });
+const enquiries = [
+  enquiry('101', { followUpDate: '2026-11-20', followUpDue: true, assignedToId: 'u2', assignedToName: 'Ravi Nair', status: 'contacted' }),
+  enquiry('102', { enquirerName: 'Neha Verma', childName: 'Ishaan Verma', className: 'Class 1', source: 'website', status: 'visit_scheduled', followUpDate: '2026-12-02', assignedToId: 'u1', assignedToName: 'Asha Verma' }),
+  enquiry('103', { enquirerName: 'Rahul Singh', childName: 'Diya Singh', className: 'UKG', source: 'referral', status: 'converted' }),
+  enquiry('104', { enquirerName: 'Meena Iyer', childName: 'Kabir Iyer', className: null, source: 'social', status: 'closed' }),
+  enquiry('105', { enquirerName: 'Priya Sharma', childName: 'Aarav Sharma', className: 'Class 3', source: 'phone', phone: '9822234567' }),
 ];
 const users = [
   { id: 'u1', username: 'asha.verma', displayName: 'Asha Verma', email: 'asha@springfield.edu.in', phone: null, status: 'active', lockedUntil: null, lastLoginAt: '2026-11-20T09:12:00Z' },
@@ -124,7 +133,7 @@ async function mockApi(page, signedIn, mfa) {
     if (path === '/me/access' && route.request().headers()['authorization'] === 'Bearer visit1')
       return json(200, { user: { id: 'p1', name: 'Rohan Mehta', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'stu', 'iam'] }, visit: { by: 'Rohan Mehta', reason: 'Fees report shows the wrong total for class 5', expiresAt: new Date(Date.now() + 18e5).toISOString() }, permissions: permissions.filter((p) => p.endsWith('.view')), scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 0 });
     if (path === '/me/access')
-      return json(200, { user: { id: 'u1', name: 'Asha Verma', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'stu', 'iam', 'wfl'] }, permissions, scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 1 });
+      return json(200, { user: { id: 'u1', name: 'Asha Verma', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'adm', 'stu', 'iam', 'wfl'] }, permissions, scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 1 });
     if (path === '/me/notifications') return json(200, { items: notifications, page: { number: 1, size: 10, total: notifications.length }, unreadCount: 3 });
     if (path.startsWith('/me/notifications/')) return route.fulfill({ status: 204 });
     if (path === '/approvals') return json(200, { items: approvalsEmpty ? [] : approvalInbox, page: { number: 1, size: 20, total: approvalsEmpty ? 0 : approvalInbox.length } });
@@ -157,6 +166,8 @@ async function mockApi(page, signedIn, mfa) {
     if (path === '/users' && route.request().method() === 'POST') return json(201, { ...users[1], id: 'u9', inviteLink: '/accept-invite?token=3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b', email: 'ravi.nair@school.test', emailQueued: true });
     if (path === '/users') return json(200, { items: users, page: { number: 1, size: 25, total: users.length } });
     if (path.endsWith('/photo') && path.startsWith('/students/')) return json(200, { url: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#c9b79c"/><circle cx="32" cy="26" r="12" fill="#8a7458"/><rect x="12" y="42" width="40" height="22" rx="11" fill="#8a7458"/></svg>'), expiresAt: '' });
+    if (path === '/enquiries') return json(200, { items: enquiries, page: { number: 1, size: 25, total: enquiries.length } });
+    if (path === '/classes') return json(200, { items: [{ id: 'c1', name: 'Nursery' }, { id: 'c2', name: 'Class 1' }], page: { number: 1, size: 200, total: 2 } });
     if (path === '/students') return json(200, { items: students, page: { number: 1, size: 25, total: students.length } });
     return json(200, { items: [], page: { number: 1, size: 25, total: 0 } });
   });
@@ -167,6 +178,8 @@ const screens = [
   { name: 'home', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma' },
   { name: 'students', path: '/students', signedIn: true, ready: 'text=Kabir Mehta' },
   { name: 'students-add', path: '/students', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: 'Add student' }).click().then(() => p.waitForSelector('role=dialog')) },
+  { name: 'enquiries', path: '/enquiries', signedIn: true, ready: 'text=Ishaan Verma' },
+  { name: 'enquiries-add', path: '/enquiries', signedIn: true, ready: 'text=Ishaan Verma', then: (p) => p.getByRole('button', { name: 'Add enquiry' }).click().then(() => p.waitForSelector('role=dialog')) },
   { name: 'users', path: '/users', signedIn: true, ready: 'text=Ravi Nair' },
   { name: 'users-invite-link', path: '/users', signedIn: true, ready: 'text=Ravi Nair', then: async (p) => { await p.getByRole('button', { name: 'Add user' }).click(); await p.getByLabel('Username').fill('r.nair2'); await p.getByLabel('Display name').fill('Ravi Nair'); await p.getByRole('button', { name: 'Add and get invite link' }).click(); await p.waitForSelector('[data-testid=one-time-link]'); } },
   { name: 'accept-invite', path: '/accept-invite?token=abc', signedIn: false, ready: 'text=Set your password' },
