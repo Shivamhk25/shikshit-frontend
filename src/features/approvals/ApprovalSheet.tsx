@@ -167,6 +167,11 @@ export function ApprovalSheet({ api, id, onClose, onChanged }: { api: ApprovalsA
               <p className="text-sm text-fg-muted">
                 Step {stepText(detail)}: {detail.stepName}
               </p>
+              {detail.delegatedFromName ? (
+                <p className="rounded-md border border-line-subtle bg-surface px-3 py-2 text-sm text-fg">
+                  You are deciding for <span className="font-medium">{detail.delegatedFromName}</span>, who handed their approvals to you. The history will say so.
+                </p>
+              ) : null}
               <div className="flex flex-col gap-1.5">
                 <label htmlFor={commentId} className="text-sm font-medium text-fg">
                   Comment <span className="font-normal text-fg-subtle">(needed to reject)</span>
@@ -214,6 +219,12 @@ export function ApprovalSheet({ api, id, onClose, onChanged }: { api: ApprovalsA
                   <p className="text-fg">
                     <span className="font-medium">{ev.actorName}</span> {EVENT_LABEL[ev.action]}
                     {ev.step !== null && ev.action !== 'submitted' && ev.action !== 'cancelled' ? ` at step ${ev.step}` : ''}
+                    {ev.onBehalfOfName ? (
+                      <span className="text-fg-muted">
+                        {' '}
+                        on behalf of <span className="font-medium text-fg">{ev.onBehalfOfName}</span>
+                      </span>
+                    ) : null}
                   </p>
                   <p className="text-xs text-fg-subtle">{when(ev.createdAt)}</p>
                   {ev.comment ? <blockquote className="mt-1.5 whitespace-pre-wrap border-l-2 border-brand-gold pl-3 text-fg-muted">{ev.comment}</blockquote> : null}

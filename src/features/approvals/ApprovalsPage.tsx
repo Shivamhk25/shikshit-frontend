@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, CircleChevronRight, ClipboardCheck, Eye, Send } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleChevronRight, ClipboardCheck, Eye, HandHelping, Send } from 'lucide-react';
 import { Button, Card, PageHeader, cx } from '../../design-system';
 import { ApiError } from '../../crud/client';
 import { useAccessState } from '../../shell/AccessProvider';
@@ -8,13 +8,15 @@ import { useAuth } from '../../shell/AuthProvider';
 import { API_BASE } from '../../shell/web-session';
 import { createApprovalsApi, type Approval, type ApprovalsApi, type ApprovalStatus } from './approvalsApi';
 import { ApprovalSheet, StatusChip } from './ApprovalSheet';
-import { STATUS_LABEL, money, rowTiming, stepText } from './logic';
+import { DelegationsPanel } from './DelegationsPanel';
+import { STATUS_LABEL, forText, money, rowTiming, stepText } from './logic';
 
 const PAGE_SIZE = 20;
-type Tab = 'inbox' | 'mine';
+type Tab = 'inbox' | 'mine' | 'handovers';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'inbox', label: 'To decide' },
   { id: 'mine', label: 'My requests' },
+  { id: 'handovers', label: 'Handovers' },
 ];
 const STATUSES: ApprovalStatus[] = ['pending', 'approved', 'rejected', 'cancelled'];
 
@@ -33,7 +35,7 @@ function VisitNotice() {
   );
 }
 
-function EmptyState({ tab, status }: { tab: Tab; status: ApprovalStatus | '' }) {
+function EmptyState({ tab, status }: { tab: 'inbox' | 'mine'; status: ApprovalStatus | '' }) {
   const Icon = tab === 'inbox' ? ClipboardCheck : Send;
   const [title, text] =
     tab === 'inbox'
@@ -78,6 +80,12 @@ function Row({ a, onOpen }: { a: Approval; onOpen: () => void }) {
             <span aria-hidden="true">·</span>
             <span>{rowTiming(a)}</span>
           </span>
+          {forText(a) ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-gold/50 bg-accent-subtle px-2 py-0.5 text-xs font-medium text-accent-fg">
+              <HandHelping aria-hidden="true" className="size-3.5" />
+              {forText(a)}
+            </span>
+          ) : null}
         </span>
         <CircleChevronRight aria-hidden="true" className="mt-1 size-5 shrink-0 text-fg-subtle transition-colors group-hover:text-accent-fg" />
       </button>
@@ -88,14 +96,14 @@ function Row({ a, onOpen }: { a: Approval; onOpen: () => void }) {
 /**
  * FND-20 approvals: "To decide" (requests whose current step I may decide) and "My requests" (ones I sent, with a status
  * filter). A row opens the request in a sheet; the open request is kept in the address (?id=) so a link or a notification
- * can point at it. Delegation will add its own section beside these tabs.
+ * can point at it. "Handovers" is where I hand my approvals to a colleague for a period, and see the ones handed to me.
  */
 export function ApprovalsPage() {
   const { session } = useAuth();
   const access = useAccessState();
   const api: ApprovalsApi = useMemo(() => createApprovalsApi(session, API_BASE), [session]);
   const [params, setParams] = useSearchParams();
-  const tab: Tab = params.get('tab') === 'mine' ? 'mine' : 'inbox';
+  const tab: Tab = params.get('tab') === 'mine' ? 'mine' : params.get('tab') === 'handovers' ? 'handovers' : 'inbox';
   const openId = params.get('id');
   const inVisit = access.phase === 'ready' && Boolean(access.payload.visit);
 
@@ -104,10 +112,11 @@ export function ApprovalsPage() {
   const [load, setLoad] = useState<Load>({ phase: 'loading' });
   const [inboxTotal, setInboxTotal] = useState<number | null>(null);
   const seq = useRef(0);
-  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ inbox: null, mine: null });
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ inbox: null, mine: null, handovers: null });
 
   const fetchList = useCallback(async () => {
     if (inVisit) return setLoad({ phase: 'visit' });
+    if (tab === 'handovers') return;
     const mine = ++seq.current;
     try {
       const r = tab === 'inbox' ? await api.inbox({ page, pageSize: PAGE_SIZE }) : await api.mine({ page, pageSize: PAGE_SIZE, status: status || undefined });
@@ -129,7 +138,7 @@ export function ApprovalsPage() {
   const go = (next: Tab) => {
     setPage(1);
     setLoad({ phase: 'loading' });
-    setParams(next === 'mine' ? { tab: 'mine' } : {}, { replace: true });
+    setParams(next === 'inbox' ? {} : { tab: next }, { replace: true });
   };
   const onTabKey = (e: KeyboardEvent, i: number) => {
     const target = e.key === 'ArrowRight' ? (i + 1) % TABS.length : e.key === 'ArrowLeft' ? (i + TABS.length - 1) % TABS.length : e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1 : -1;
@@ -146,12 +155,13 @@ export function ApprovalsPage() {
     setParams(next, { replace: false });
   };
 
+  const showVisit = load.phase === 'visit' || inVisit;
   const pages = load.phase === 'ready' ? Math.max(1, Math.ceil(load.total / PAGE_SIZE)) : 1;
 
   return (
     <section className="space-y-6">
-      <PageHeader eyebrow="Workflow" title="Approvals" description="Requests waiting for your decision, and the ones you have sent." />
-      {load.phase === 'visit' ? (
+      <PageHeader eyebrow="Workflow" title="Approvals" description="Requests waiting for your decision, the ones you have sent, and handovers to a colleague." />
+      {showVisit ? (
         <VisitNotice />
       ) : (
         <>
@@ -210,7 +220,9 @@ export function ApprovalsPage() {
           </div>
 
           <div id="approvals-panel" role="tabpanel" aria-labelledby={`approvals-tab-${tab}`} className="space-y-4">
-            {load.phase === 'error' ? (
+            {tab === 'handovers' ? (
+              <DelegationsPanel api={api} onChanged={() => void fetchList()} />
+            ) : load.phase === 'error' ? (
               <div role="alert" className="space-y-3 rounded-lg border border-danger-line bg-surface p-6 shadow-soft">
                 <p className="text-fg">{load.message}</p>
                 <Button variant="secondary" size="sm" onClick={() => void fetchList()}>
@@ -241,7 +253,7 @@ export function ApprovalsPage() {
               </Card>
             )}
 
-            {load.phase === 'ready' && load.total > PAGE_SIZE ? (
+            {tab !== 'handovers' && load.phase === 'ready' && load.total > PAGE_SIZE ? (
               <nav className="flex items-center justify-between text-sm text-fg-muted" aria-label="Pagination">
                 <span>
                   Page {page} of {pages} · {load.total} requests
@@ -259,7 +271,7 @@ export function ApprovalsPage() {
           </div>
         </>
       )}
-      {openId && load.phase !== 'visit' ? <ApprovalSheet key={openId} api={api} id={openId} onClose={() => open(null)} onChanged={() => void fetchList()} /> : null}
+      {openId && !showVisit ? <ApprovalSheet key={openId} api={api} id={openId} onClose={() => open(null)} onChanged={() => void fetchList()} /> : null}
     </section>
   );
 }
