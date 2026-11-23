@@ -18,6 +18,7 @@ import { ResourcePage } from '../features/aca/ResourcePage';
 import { discussionsDescriptor } from '../features/adm/discussions';
 import { InsightsPage } from '../features/adm/InsightsPage';
 import { enquiriesDescriptor } from '../features/adm/enquiries';
+import { AdmissionsPage } from '../features/adm/AdmissionsPage';
 import { enquiriesWithRegister, registrationsDescriptor } from '../features/adm/registrations';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
 import { chaptersDescriptor, classSectionsDescriptor, subjectClassesDescriptor, textbooksDescriptor } from '../features/aca/mappings';
@@ -73,6 +74,14 @@ function Gate() {
             element={
               <RequirePermission path="/admission-insights">
                 <InsightsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="admissions"
+            element={
+              <RequirePermission path="/admissions">
+                <AdmissionsPage />
               </RequirePermission>
             }
           />

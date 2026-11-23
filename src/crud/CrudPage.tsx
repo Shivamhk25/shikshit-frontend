@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
-import { ChevronLeft, ChevronRight, FilePlus, Inbox, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, FilePlus, Inbox, Pencil, Plus, Search, Trash2, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { Button, Card, ConfirmDialog, Input, PageHeader, Sheet } from '../design-system';
@@ -147,6 +148,11 @@ function FilterControl({ filter, value, options, onChange }: { filter: FilterDef
 
 type Editing = { mode: 'create' } | { mode: 'edit'; row: { id: string } };
 
+/** The `q` in the address bar, when another screen sent the person here to find one record. */
+function initialSearch(): string {
+  return new URLSearchParams(window.location.search).get('q')?.trim() ?? '';
+}
+
 /**
  * List page for one resource: search, sortable columns, paging, and a side-sheet form. Add / Edit / Delete appear only
  * for users who hold the matching permission; the server enforces the same rules on every request.
@@ -172,8 +178,9 @@ export function CrudPage<T extends { id: string }>({
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState(d.defaultSort);
-  const [search, setSearch] = useState('');
-  const [query, setQuery] = useState('');
+  // A hand-off from another screen can open the list already searched (?q=…), for example a student's code.
+  const [search, setSearch] = useState(initialSearch);
+  const [query, setQuery] = useState(initialSearch);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState('');
   const latest = useRef(0);
@@ -330,7 +337,8 @@ export function CrudPage<T extends { id: string }>({
   const filtered = Object.values(filterValues).some(Boolean);
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const rowActions = (d.rowActions ?? []).filter((a) => can(a.permission));
-  const showActions = canEdit || canDelete || rowActions.length > 0;
+  const rowLinks = (d.rowLinks ?? []).filter((a) => can(a.permission));
+  const showActions = canEdit || canDelete || rowActions.length > 0 || rowLinks.length > 0;
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, total);
   const cols = useMemo(() => d.columns, [d.columns]);
@@ -436,7 +444,16 @@ export function CrudPage<T extends { id: string }>({
                     </td>
                   ))}
                   {showActions ? (
-                    <td className="space-x-1 whitespace-nowrap px-5 py-2.5 text-right">
+                    <td className="px-5 py-2.5 text-right">
+                      <div className="flex flex-wrap justify-end gap-1">
+                      {rowLinks
+                        .filter((a) => !a.visible || a.visible(row))
+                        .map((a) => (
+                          <Link key={a.key} to={a.href(row)} aria-label={`${a.label} ${d.label(row)}`} className="inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-accent-fg hover:bg-subtle focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent-subtle">
+                            <UserCheck aria-hidden="true" className="size-3.5" />
+                            {a.label}
+                          </Link>
+                        ))}
                       {rowActions
                         .filter((a) => !a.visible || a.visible(row))
                         .map((a) => (
@@ -466,6 +483,7 @@ export function CrudPage<T extends { id: string }>({
                           Delete
                         </Button>
                       ) : null}
+                      </div>
                     </td>
                   ) : null}
                 </tr>

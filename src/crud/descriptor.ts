@@ -50,6 +50,15 @@ export interface RowAction<T> {
   success: (result: Record<string, unknown>) => string;
 }
 
+/** A link in a row's Actions cell that opens another screen (no server call). Shown to people who hold `permission`, on rows `visible` accepts. */
+export interface RowLink<T> {
+  key: string;
+  label: string;
+  permission: string;
+  visible?: (row: T) => boolean;
+  href: (row: T) => string;
+}
+
 /** A filter above the table. A select sends its value as a query parameter; a toggle sends "true" when ticked. */
 export interface FilterDef {
   key: string;
@@ -81,6 +90,8 @@ export interface CrudDescriptor<T> {
   filters?: FilterDef[];
   /** Extra buttons in each row's Actions cell. */
   rowActions?: RowAction<T>[];
+  /** Extra links in each row's Actions cell, for hand-offs to another screen. */
+  rowLinks?: RowLink<T>[];
   /**
    * Shown at the top of the edit sheet for an existing row (for example a student's photo). `form.setValue` changes a
    * field of the open form, for an extra that changes the record behind the form's back.
