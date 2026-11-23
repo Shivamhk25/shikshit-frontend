@@ -11,6 +11,8 @@ import { Button, Logo, ThemeProvider, cx } from '../design-system';
 import { useAccessState } from './AccessProvider';
 import { useAuth } from './AuthProvider';
 import { CommandPalette } from './CommandPalette';
+import { createNotificationsApi } from '../features/notifications/notificationsApi';
+import { NotificationBell } from '../features/notifications/NotificationBell';
 import { NAV_ICONS } from './navIcons';
 import { registry } from './registry';
 
@@ -133,6 +135,7 @@ export function AppShell() {
   const access = useAccessState();
   const { signOut, session } = useAuth();
   const appearanceApi = useMemo(() => createAppearanceApi(session, API_BASE), [session]);
+  const notificationsApi = useMemo(() => createNotificationsApi(session, API_BASE), [session]);
   const [themeChoice, setThemeChoice] = useState<ThemeMode>(storedMode);
   const ready = access.phase === 'ready';
   useEffect(() => {
@@ -204,11 +207,17 @@ export function AppShell() {
         ) : null}
         <div className="flex min-h-screen flex-col lg:pl-64">
           {payload.visit ? <VisitBanner visit={payload.visit} onEnd={() => void signOut()} /> : null}
-          <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line-subtle bg-canvas/85 px-4 backdrop-blur-sm sm:px-8 lg:hidden">
-            <button type="button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Close menu' : 'Open menu'} className="flex size-9 items-center justify-center rounded-md text-fg-muted hover:bg-subtle hover:text-fg">
+          <header className={cx('sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line-subtle bg-canvas/85 px-4 backdrop-blur-sm sm:px-8', payload.visit && 'lg:hidden')}>
+            <button type="button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Close menu' : 'Open menu'} className="flex size-9 items-center justify-center rounded-md text-fg-muted hover:bg-subtle hover:text-fg lg:hidden">
               {menuOpen ? <X aria-hidden="true" className="size-5" /> : <Menu aria-hidden="true" className="size-5" />}
             </button>
-            <Logo size={28} />
+            <span className="lg:hidden">
+              <Logo size={28} />
+            </span>
+            <div className="ml-auto flex items-center gap-1">
+              {/* A read-only support visit cannot read or change notifications (the server answers 403), so no bell there. */}
+              <NotificationBell api={notificationsApi} enabled={!payload.visit} />
+            </div>
           </header>
           <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-8 lg:px-12 lg:py-12">
             <Outlet />
