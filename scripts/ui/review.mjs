@@ -24,6 +24,7 @@ const nav = [
   { screenId: 'admissions', label: 'Admissions', order: 38 },
   { screenId: 'students', label: 'Students', order: 40 },
   { screenId: 'guardians', label: 'Guardians', order: 42 },
+  { screenId: 'promotions', label: 'Promotions', order: 45 },
   { screenId: 'scope_assignments', label: 'Class assignments', order: 60 },
   { screenId: 'users', label: 'Users', order: 61 },
   { screenId: 'roles', label: 'Roles', order: 62 },
@@ -32,7 +33,7 @@ const nav = [
   { screenId: 'approvals', label: 'Approvals', order: 70 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
-const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create'];
+const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create', 'stu.student_promotions.view', 'stu.student_promotions.create', 'stu.student_promotions.edit', 'stu.student_promotions.delete'];
 const admission = (n, o) => ({ id: `r${n}`, applicationNumber: `REG-0000${n}`, appliedOn: '2026-11-12', fullName: 'Diya Singh', dateOfBirth: '2021-03-14', gender: 'female', fatherName: 'Rahul Singh', motherName: null, guardianName: null, guardianPhone: '9810012345', classId: 'c1', className: 'Nursery', sectionId: null, sectionName: null, yearId: 'y1', yearName: '2027-28', status: 'accepted', admitted: false, admittedAt: null, studentId: null, studentCode: null, enrolledSectionName: null, rollNumber: null, ...o });
 const admissions = [admission(43, {}), admission(46, { fullName: 'Kabir Iyer', gender: null, className: 'Class 1', classId: 'c2' }), admission(47, { fullName: 'Aarav Sharma', sectionName: 'A' })];
 const students = [
@@ -40,6 +41,17 @@ const students = [
   { id: '2', registrationCode: 'R-0002', firstName: 'Kabir', fullName: 'Kabir Mehta', gender: 'male', dateOfBirth: '2015-02-11', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '2' },
   { id: '3', registrationCode: 'R-0003', firstName: 'Meera', fullName: 'Meera Iyer', gender: 'female', dateOfBirth: '2014-11-23', status: 'paused', currentClassName: 'Class 5', currentSectionName: 'B', currentRollNumber: null },
 ];
+
+// Promotions (STU-07)
+let promoMode = 'draft';
+const promoBatch = (o) => ({ id: 'b1', fromYearId: 'y1', fromYearName: '2026-27', toYearId: 'y2', toYearName: '2027-28', fromClassId: 'c5', fromClassName: 'Class 5', fromSectionId: 'sa', fromSectionName: 'Section A', rollMode: 'alphabetical', note: null, status: 'draft', studentCount: 5, promoteCount: 3, repeatCount: 1, graduateCount: 0, leaveOutCount: 1, committedAt: null, committedByName: null, undoUntil: null, canUndo: false, duesOverrideReason: null, undoneAt: null, undoneByName: null, undoReason: null, createdAt: '2026-11-20T04:00:00Z', updatedAt: '2026-11-20T04:00:00Z', ...o });
+const promoPeople = [['s1', 'R-0001', 'Asha Rao', 'active', '1'], ['s2', 'R-0002', 'Kabir Mehta', 'active', '2'], ['s3', 'R-0003', 'Meera Iyer', 'paused', '3'], ['s4', 'R-0004', 'Zoya Khan', 'active', '4'], ['s5', 'R-0005', 'Dev Patel', 'active', '5']];
+const promoCandidates = promoPeople.map(([studentId, registrationCode, studentName, studentStatus, rollNumber]) => ({ studentId, registrationCode, studentName, studentStatus, enrollmentId: `e${studentId}`, rollNumber, decision: studentStatus === 'active' ? 'promote' : 'leave_out', toClassId: studentStatus === 'active' ? 'c6' : null, toClassName: studentStatus === 'active' ? 'Class 6' : null }));
+const promoRows = (committed) => promoPeople.map(([studentId, registrationCode, studentName, studentStatus, rollNumber], i) => ({ studentId, registrationCode, studentName, studentStatus, enrollmentId: `e${studentId}`, rollNumber, decision: studentStatus !== 'active' ? 'leave_out' : studentId === 's5' ? 'repeat' : 'promote', toClassId: studentStatus !== 'active' ? null : studentId === 's5' ? 'c5' : 'c6', toClassName: null, toSectionId: null, toSectionName: null, newRollNumber: null, newEnrollmentId: committed && studentStatus === 'active' ? `n${i}` : null, enrolledClassName: committed && studentStatus === 'active' ? (studentId === 's5' ? 'Class 5' : 'Class 6') : null, enrolledSectionName: committed && studentStatus === 'active' ? 'Section A' : null, enrolledRollNumber: committed && studentStatus === 'active' ? String(i + 1) : null }));
+const promoOutcome = (problem) => ({ batch: promoBatch({}), committed: false, alreadyCommitted: false, undone: false, alreadyUndone: false, enrolledCount: problem ? 3 : 4, graduatedCount: 0, leftOutCount: 1, problemCount: problem ? 1 : 0, duesOverridden: false,
+  warnings: ['Class 6 section Section A would have 31 students; its capacity is 30.'],
+  rows: promoRows(false).map((r, i) => ({ studentId: r.studentId, registrationCode: r.registrationCode, studentName: r.studentName, decision: r.decision, outcome: r.decision === 'leave_out' ? 'leave_out' : problem && r.studentId === 's2' ? 'problem' : 'enrol', toClassId: r.toClassId, toClassName: r.decision === 'repeat' ? 'Class 5' : 'Class 6', toSectionId: 'sa', toSectionName: 'Section A', rollNumber: problem && r.studentId === 's2' ? null : String(i + 1), enrollmentId: null,
+    problems: problem && r.studentId === 's2' ? [{ field: 'rollNumber', code: 'roll_taken', message: 'Roll number 2 is already used in Class 6 section Section A.' }] : [] })) });
 const enquiry = (id, o) => ({ id, code: `ENQ-${id}`, enquirerName: 'Sunil Kumar', phone: '9810012345', email: null, childName: 'Anaya Kumar', dateOfBirth: '2021-03-14', classId: 'c1', classCode: 'NUR', className: 'Nursery', yearId: 'y1', yearName: '2027-28', source: 'walk_in', status: 'new', followUpDate: null, followUpDue: false, notes: null, assignedToId: null, assignedToName: null, createdAt: '2026-11-18T00:00:00Z', updatedAt: '2026-11-18T00:00:00Z', ...o });
 const enquiries = [
   enquiry('101', { followUpDate: '2026-11-20', followUpDue: true, assignedToId: 'u2', assignedToName: 'Ravi Nair', status: 'contacted' }),
@@ -213,6 +225,15 @@ async function mockApi(page, signedIn, mfa) {
     if (path === '/colleagues') return json(200, { items: [{ id: 'u1', displayName: 'Asha Verma', label: 'Principal' }, { id: 'u2', displayName: 'Ravi Nair', label: 'Teacher' }, { id: 'u5', displayName: 'Kavita Rao', label: 'Teacher, Head of Department' }, { id: 'u6', displayName: 'Priya Sharma', label: 'Registrar' }], page: { number: 1, size: 25, total: 4 } });
     if (path === '/users') return json(200, { items: users, page: { number: 1, size: 25, total: users.length } });
     if (path.endsWith('/photo') && path.startsWith('/students/')) return json(200, { url: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#c9b79c"/><circle cx="32" cy="26" r="12" fill="#8a7458"/><rect x="12" y="42" width="40" height="22" rx="11" fill="#8a7458"/></svg>'), expiresAt: '' });
+    if (path === '/academic-years' && promoMode !== 'off') return json(200, { items: [{ id: 'y1', name: '2026-27' }, { id: 'y2', name: '2027-28' }], page: { number: 1, size: 200, total: 2 } });
+    if (path === '/classes' && promoMode !== 'off') return json(200, { items: [{ id: 'c5', name: 'Class 5' }, { id: 'c6', name: 'Class 6' }, { id: 'c7', name: 'Class 7' }], page: { number: 1, size: 200, total: 3 } });
+    if (path === '/class-section-mappings' && promoMode !== 'off') return json(200, { items: new URL(route.request().url()).searchParams.get('yearId') === 'y1' ? [{ classId: 'c5', yearId: 'y1', sectionId: 'sa', sectionName: 'Section A' }] : [{ classId: 'c6', yearId: 'y2', sectionId: 'sa', sectionName: 'Section A' }, { classId: 'c6', yearId: 'y2', sectionId: 'sb', sectionName: 'Section B' }, { classId: 'c5', yearId: 'y2', sectionId: 'sa', sectionName: 'Section A' }], page: { number: 1, size: 200, total: 3 } });
+    if (path === '/promotions/proposal') return json(200, { fromYearId: 'y1', fromYearName: '2026-27', toYearId: 'y2', toYearName: '2027-28', classId: 'c5', className: 'Class 5', sectionId: 'sa', sectionName: 'Section A', nextClassId: 'c6', nextClassName: 'Class 6', isLastClass: false, existingBatchId: promoMode === 'committed' ? 'b1' : null, existingBatchStatus: promoMode === 'committed' ? 'committed' : null, candidates: promoCandidates });
+    if (path === '/promotions' && route.request().method() === 'POST') return json(201, { batch: promoBatch({}), rows: promoRows(false) });
+    if (path === '/promotions') return json(200, { items: [promoBatch({}), promoBatch({ id: 'b2', fromClassName: 'Class 7', status: 'committed', committedAt: '2026-11-18T05:00:00Z', undoUntil: '2026-11-25T05:00:00Z', canUndo: true }), promoBatch({ id: 'b3', fromClassName: 'Class 8', fromSectionName: 'Section B', status: 'undone', undoneAt: '2026-11-19T05:00:00Z', undoReason: 'Wrong year' })], page: { number: 1, size: 25, total: 3 } });
+    if (path === '/promotions/b1/preview') return json(200, promoOutcome(promoMode === 'problem'));
+    if (path === '/promotions/b1/undo') return json(409, { code: 'cannot_undo', detail: 'This promotion can no longer be undone. Nothing was changed.', errors: [{ field: 's2', code: 'enrolment_changed', message: 'edited' }, { field: 's4', code: 'promoted_onward', message: 'again' }] });
+    if (path === '/promotions/b1') return json(200, promoMode === 'committed' ? { batch: promoBatch({ status: 'committed', committedAt: '2026-11-21T05:00:00Z', committedByName: 'Asha Verma', undoUntil: '2026-11-28T05:00:00Z', canUndo: true }), rows: promoRows(true) } : { batch: promoBatch({}), rows: promoRows(false) });
     if (path === '/enquiry-discussions') {
       const e = new URL(route.request().url()).searchParams.get('enquiryId');
       const items = e ? discussions.filter((d) => d.enquiryId === e) : discussions;
@@ -228,6 +249,15 @@ async function mockApi(page, signedIn, mfa) {
     if (path === '/students') return json(200, { items: students, page: { number: 1, size: 25, total: students.length } });
     return json(200, { items: [], page: { number: 1, size: 25, total: 0 } });
   });
+}
+
+
+async function promoPick(p) {
+  await p.getByLabel('Year being closed').selectOption('y1');
+  await p.locator('label', { hasText: /^Class/ }).locator('select').selectOption('c5');
+  await p.locator('label', { hasText: /^Section/ }).locator('select').selectOption('sa');
+  await p.getByRole('button', { name: 'Show students' }).click();
+  await p.waitForSelector('text=Asha Rao');
 }
 
 const screens = [
@@ -249,6 +279,13 @@ const screens = [
   { name: 'registrations', path: '/registrations', signedIn: true, ready: 'text=Ishaan Verma' },
   { name: 'admissions', path: '/admissions', signedIn: true, ready: 'text=Diya Singh' },
   { name: 'admissions-admit', path: '/admissions', signedIn: true, ready: 'text=Diya Singh', then: (p) => p.getByRole('button', { name: /^Admit REG-000043/ }).click().then(() => p.waitForSelector('role=dialog')) },
+  { name: 'promotions-step1', path: '/promotions', signedIn: true, promo: 'draft', ready: 'text=Which class section?', then: promoPick },
+  { name: 'promotions-step2', path: '/promotions', signedIn: true, promo: 'problem', ready: 'text=Which class section?', then: async (p) => { await promoPick(p); await p.getByRole('button', { name: /Save and continue/ }).click(); await p.waitForSelector('text=Roll numbers in'); await p.getByRole('button', { name: 'Preview' }).click(); await p.waitForSelector('text=needs attention'); } },
+  { name: 'promotions-step2-ready', path: '/promotions', signedIn: true, promo: 'draft', ready: 'text=Which class section?', then: async (p) => { await promoPick(p); await p.getByRole('button', { name: /Save and continue/ }).click(); await p.waitForSelector('text=Roll numbers in'); await p.getByRole('button', { name: 'Preview' }).click(); await p.waitForSelector('text=Ready:'); } },
+  { name: 'promotions-done', path: '/promotions', signedIn: true, promo: 'committed', ready: 'text=Which class section?', then: async (p) => { await promoPick(p); await p.waitForSelector('text=Committed on'); } },
+  { name: 'promotions-undo-ask', path: '/promotions', signedIn: true, promo: 'committed', ready: 'text=Which class section?', then: async (p) => { await promoPick(p); await p.getByRole('button', { name: /Undo this promotion/ }).click(); await p.waitForSelector('role=alertdialog'); } },
+  { name: 'promotions-undo-refused', path: '/promotions', signedIn: true, promo: 'committed', ready: 'text=Which class section?', then: async (p) => { await promoPick(p); await p.getByRole('button', { name: /Undo this promotion/ }).click(); await p.getByRole('textbox', { name: 'Why are you undoing it?' }).fill('Wrong year'); await p.getByRole('button', { name: 'Undo promotion' }).click(); await p.waitForSelector('text=can no longer be undone'); } },
+  { name: 'promotions-history', path: '/promotions', signedIn: true, promo: 'draft', ready: 'text=Which class section?', then: async (p) => { await p.getByRole('button', { name: 'History' }).click(); await p.waitForSelector('text=Class 7 · Section A'); } },
   { name: 'registrations-add', path: '/registrations', signedIn: true, ready: 'text=Ishaan Verma', then: (p) => p.getByRole('button', { name: 'Add registration' }).click().then(() => p.waitForSelector('role=dialog')) },
   { name: 'enquiries-register', path: '/enquiries', signedIn: true, ready: 'text=Ishaan Verma', then: (p) => p.getByRole('button', { name: /^Register ENQ-102/ }).click().then(() => p.waitForSelector('role=alertdialog')) },
   { name: 'users', path: '/users', signedIn: true, ready: 'text=Ravi Nair' },
@@ -305,6 +342,7 @@ for (const s of screens) {
     const page = await ctx.newPage();
     approvalsEmpty = Boolean(s.empty);
     insightsMode = s.insights ?? 'ready';
+    promoMode = s.promo ?? 'off';
     handoverDenied = Boolean(s.denied);
     await mockApi(page, s.signedIn, s.mfa);
     await page.goto(BASE + s.path);
@@ -318,6 +356,7 @@ for (const s of screens) {
     const issues = axe.violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.length }));
     serious += issues.filter((i) => i.impact === 'serious' || i.impact === 'critical').length;
     report.push({ screen: s.name, size: size.name, file, issues });
+    if (process.env.UI_DETAIL) for (const v of axe.violations) for (const n of v.nodes) console.log('  ', v.id, n.html.slice(0, 160), n.any[0]?.message?.slice(0, 160));
     console.log(`${s.name}/${size.name}: ${issues.length ? issues.map((i) => `${i.impact} ${i.id} (${i.nodes})`).join(', ') : 'no accessibility issues'}`);
     await ctx.close();
   }
