@@ -7,6 +7,7 @@ import { HomePage, NotAvailablePage, OnboardingPage, ProfilePage, RequirePermiss
 import { SignInPage } from './SignInPage';
 import { AcceptInvitePage } from './AcceptInvitePage';
 import { RecoveryCodesDialog } from './mfa';
+import { ApprovalsPage } from '../features/approvals/ApprovalsPage';
 import { UsersPage } from '../features/iam/UsersPage';
 import { RolesPage } from '../features/iam/RolesPage';
 import { AssignmentsPage } from '../features/iam/AssignmentsPage';
@@ -247,6 +248,7 @@ function Gate() {
               </RequirePermission>
             }
           />
+          <Route path="approvals" element={<ApprovalsPage />} />
           <Route path="*" element={<NotAvailablePage />} />
         </Route>
       </Routes>

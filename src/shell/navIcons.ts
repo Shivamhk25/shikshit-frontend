@@ -1,5 +1,5 @@
 import {
-  BookMarked, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList, Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, HeartHandshake, Home,
+  BookMarked, ClipboardCheck, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList, Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, HeartHandshake, Home,
   Layers, Link2, Palette, ListChecks, ListOrdered, MapPin, School, ShieldCheck, Sun, Upload, UserCheck, UserCog, UserRound, Users, type LucideIcon,
 } from 'lucide-react';
 
@@ -32,6 +32,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   roles: ShieldCheck,
   parent_links: HeartHandshake,
   appearance: Palette,
+  approvals: ClipboardCheck,
   profile: UserRound,
   school: School,
 };
@@ -54,6 +55,7 @@ export const NAV_BLURBS: Record<string, string> = {
   subject_class_mappings: 'Which subjects each class studies.',
   textbooks: 'The books each class and subject uses.',
   textbook_chapters: 'Chapters, pages and periods of each book.',
+  approvals: 'Requests waiting for your decision, and the ones you sent.',
   students: 'Every learner, with their class this year.',
   student_enrollments: 'Where each student sits, year by year.',
   guardians: 'Parents and guardians, shared between siblings.',
