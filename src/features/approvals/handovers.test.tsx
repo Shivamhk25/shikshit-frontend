@@ -41,7 +41,8 @@ interface Opts {
   create?: () => Response;
   /** Answer to POST .../end. */
   end?: () => Response;
-  lookup?: boolean;
+  /** Answer to GET /colleagues. */
+  colleagues?: () => Response;
   visit?: boolean;
 }
 
@@ -59,9 +60,9 @@ function mount(o: Opts = {}, url = '/approvals?tab=handovers') {
       return json(200, {
         user: { id: 'me', name: 'Asha', tier: 'tenant' }, tenant: { id: 't1', name: 'School', brand: { primary: '#1F3A5F' }, modules: ['wfl', 'iam'] },
         ...(o.visit ? { visit: { by: 'Rohan', reason: 'Checking a report', expiresAt: at(1_800_000) } } : {}),
-        permissions: o.lookup === false ? [] : ['iam.users.view'], scopes: {}, fieldMasks: {}, workspace: { home: 'x', navigation: [{ screenId: 'approvals', label: 'Approvals', order: 1 }] }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 1,
+        permissions: [], scopes: {}, fieldMasks: {}, workspace: { home: 'x', navigation: [{ screenId: 'approvals', label: 'Approvals', order: 1 }] }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 1,
       });
-    if (path === '/users') return json(200, { items: [{ id: 'me', displayName: 'Asha Verma', email: null, status: 'active' }, { id: 'u-head', displayName: 'Kavita Rao', email: 'kavita@school.test', status: 'active' }], page: { number: 1, size: 10, total: 2 } });
+    if (path === '/colleagues') return o.colleagues ? o.colleagues() : json(200, { items: [{ id: 'me', displayName: 'Asha Verma', label: 'Principal' }, { id: 'u-head', displayName: 'Kavita Rao', label: 'Teacher, Head of Department' }], page: { number: 1, size: 25, total: 2 } });
     if (path === '/approvals/delegations' && method === 'GET') return json(200, { given: o.given ?? [], received: o.received ?? [] });
     if (path === '/approvals/delegations' && method === 'POST') return o.create ? o.create() : json(201, deleg('new'));
     if (/^\/approvals\/delegations\/[^/]+\/end$/.test(path)) return o.end ? o.end() : json(200, deleg('d1', { status: 'ended', endedAt: at(0) }));
@@ -202,13 +203,33 @@ describe('handovers', () => {
     expect(await within(dialog).findByText('That person is not active.')).toBeInTheDocument();
   });
 
-  it('tells a person who cannot read the user list that colleagues cannot be searched', async () => {
-    const { calls } = mount({ lookup: false });
+  it('finds colleagues through the colleague lookup without the user-list permission', async () => {
+    const { calls } = mount();
     await userEvent.click(await screen.findByRole('button', { name: /Hand over my approvals/ }));
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText(/cannot look up colleagues yet/)).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Hand over' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: 'Hand over' })).toBeEnabled();
+    await userEvent.type(within(dialog).getByLabelText(/^Colleague \*$/), 'Kav');
+    const results = within(dialog).getByLabelText('Colleague results');
+    await waitFor(() => expect(within(results).getByRole('option', { name: 'Kavita Rao (Teacher, Head of Department)' })).toBeInTheDocument());
+    expect(within(results).queryByRole('option', { name: /Asha Verma/ })).not.toBeInTheDocument();
     expect(calls.some((c) => c.path.startsWith('/users'))).toBe(false);
+    expect(calls.some((c) => c.path === '/colleagues?page=1&pageSize=25&q=Kav')).toBe(true);
+  });
+
+  it('does not search for a single letter, which the server refuses', async () => {
+    const { calls } = mount();
+    await userEvent.click(await screen.findByRole('button', { name: /Hand over my approvals/ }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText(/^Colleague \*$/), 'K');
+    await new Promise((r) => setTimeout(r, 400));
+    expect(calls.some((c) => c.path.includes('q=K'))).toBe(false);
+  });
+
+  it('shows an error when the colleague lookup is refused', async () => {
+    mount({ colleagues: () => json(403, { code: 'permission_denied', detail: 'Not allowed.' }) });
+    await userEvent.click(await screen.findByRole('button', { name: /Hand over my approvals/ }));
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
   });
 
   it('asks before ending a handover now, and ends it only when confirmed', async () => {

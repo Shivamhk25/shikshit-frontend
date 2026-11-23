@@ -41,12 +41,15 @@ const toOption = (f: FieldDef, row: Record<string, unknown>): PickerOption => {
 };
 
 function searchRemote(client: OptionsClient, f: FieldDef, q: string): Promise<PickerOption[]> {
+  if (q && q.length < (f.remote!.minChars ?? 0)) return Promise.resolve([]);
   return client(f.remote!.endpoint)
     .list({ page: 1, pageSize: 20, sort: undefined, q: q || undefined })
     .then((r) => r.items.map((row) => toOption(f, row)));
 }
 
-function describeRemote(client: OptionsClient, f: FieldDef, id: string): Promise<PickerOption | null> {
+function describeRemote(client: OptionsClient, f: FieldDef, id: string, row?: Record<string, unknown>): Promise<PickerOption | null> {
+  const known = f.remote!.currentLabel && row ? row[f.remote!.currentLabel] : null;
+  if (f.remote!.currentLabel) return Promise.resolve(known ? { value: id, label: String(known) } : null);
   return client(f.remote!.endpoint)
     .get(id)
     .then((row) => toOption(f, row))
@@ -458,7 +461,7 @@ export function CrudPage<T extends { id: string }>({
                   value={String(values[f.key] ?? '')}
                   onChange={(v) => setValues({ ...values, [f.key]: v })}
                   search={(q) => searchRemote(optionsClient, f, q)}
-                  describe={(id) => describeRemote(optionsClient, f, id)}
+                  describe={(id) => describeRemote(optionsClient, f, id, editing.mode === 'edit' ? (editing.row as Record<string, unknown>) : undefined)}
                 />
               ) : (
                 <FieldControl key={f.key} field={f} value={values[f.key] ?? ''} error={fieldErrors[f.key]} options={remote[f.key]} onChange={(v) => setValues({ ...values, [f.key]: v })} />

@@ -2,17 +2,22 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { ArrowRightLeft, HandHelping, Inbox, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Card, ConfirmDialog, Sheet, cx } from '../../design-system';
-import { ApiError } from '../../crud/client';
+import { ApiError, createCrudClient } from '../../crud/client';
 import { SearchPicker } from '../../crud/SearchPicker';
-import { createUsersApi } from '../iam/usersApi';
 import { useAccessState } from '../../shell/AccessProvider';
 import { useAuth } from '../../shell/AuthProvider';
 import { API_BASE } from '../../shell/web-session';
 import type { ApprovalsApi, Delegation, DelegationInput } from './approvalsApi';
 import { DELEGATION_LABEL, DELEGATION_TONE, MAX_HANDOVER_DAYS, REASON_MAX, isCurrent, latestEnd, parseLocal, scopeText, toLocalInput, validateHandover, when, type HandoverErrors, type HandoverForm } from './logic';
 
+/** One person the lookup offers (backend api/openapi/modules/iam-colleagues.yaml); never an email or phone. */
+interface Colleague {
+  id: string;
+  displayName: string;
+  label: string;
+}
+
 export const NO_RIGHTS_MESSAGE = 'You can hand over approvals only when you can decide some yourself. Right now there is nothing you can decide, so there is nothing to hand over.';
-export const NO_LOOKUP_MESSAGE = 'Your account cannot look up colleagues yet. Ask an administrator to give you access to the user list, or to hand over for you.';
 
 function StatusPill({ d }: { d: Delegation }) {
   return (
@@ -100,16 +105,15 @@ const fieldClass = (bad: boolean) =>
   );
 
 /**
- * The form to hand my approvals to a colleague. The colleague is found through the users list, which only people with
- * the user-list permission may read; without it the person is told so instead of seeing an empty picker. The limit to
+ * The form to hand my approvals to a colleague. The colleague is found through the colleague lookup, which any active
+ * staff account may use (it returns names and roles only). The limit to
  * some request types is left out because the server does not list the types yet.
  */
 function HandoverSheet({ api, onClose, onCreated }: { api: ApprovalsApi; onClose: () => void; onCreated: () => void }) {
   const { session } = useAuth();
   const access = useAccessState();
   const me = access.phase === 'ready' ? access.payload.user.id : '';
-  const canLookup = access.phase === 'ready' && access.access.can('iam.users.view');
-  const users = useMemo(() => createUsersApi(session, API_BASE), [session]);
+  const colleagues = useMemo(() => createCrudClient<Colleague, never>(session, API_BASE, '/colleagues'), [session]);
   const [form, setForm] = useState<HandoverForm>({ delegateId: '', startMode: 'now', startsAt: toLocalInput(new Date(Date.now() + 3_600_000)), endsAt: '', reason: '' });
   const [errors, setErrors] = useState<HandoverErrors>({});
   const [problem, setProblem] = useState('');
@@ -177,25 +181,20 @@ function HandoverSheet({ api, onClose, onCreated }: { api: ApprovalsApi; onClose
           </div>
         ) : null}
 
-        {canLookup ? (
-          <SearchPicker
-            label="Colleague"
-            required
-            hint="They must be an active user of this school."
-            error={errors.delegateId}
-            value={form.delegateId}
-            onChange={(v) => set('delegateId', v)}
-            search={async (q) => {
-              const r = await users.list({ page: 1, pageSize: 10, q: q || undefined, filters: { status: 'active' } });
-              return r.items.filter((u) => u.id !== me).map((u) => ({ value: u.id, label: u.email ? `${u.displayName} (${u.email})` : u.displayName }));
-            }}
-            describe={() => Promise.resolve(null)}
-          />
-        ) : (
-          <p role="note" className="rounded-md border border-line-subtle bg-canvas px-3 py-3 text-sm text-fg-muted">
-            {NO_LOOKUP_MESSAGE}
-          </p>
-        )}
+        <SearchPicker
+          label="Colleague"
+          required
+          hint="Type at least 2 letters of their name."
+          error={errors.delegateId}
+          value={form.delegateId}
+          onChange={(v) => set('delegateId', v)}
+          search={async (q) => {
+            if (q.length === 1) return [];
+            const r = await colleagues.list({ page: 1, pageSize: 25, sort: undefined, q: q || undefined });
+            return r.items.filter((c) => c.id !== me).map((c) => ({ value: c.id, label: `${c.displayName} (${c.label})` }));
+          }}
+          describe={() => Promise.resolve(null)}
+        />
 
         <fieldset className="space-y-2">
           <legend className="text-sm font-medium text-fg">Starts</legend>
@@ -252,7 +251,7 @@ function HandoverSheet({ api, onClose, onCreated }: { api: ApprovalsApi; onClose
         <p className="text-sm text-fg-muted">This covers every kind of request you can decide. Limiting it to some request types will come when the server lists them.</p>
 
         <div className="flex gap-2">
-          <Button type="submit" loading={busy} disabled={!canLookup}>
+          <Button type="submit" loading={busy}>
             Hand over
           </Button>
           <Button variant="secondary" onClick={onClose}>
