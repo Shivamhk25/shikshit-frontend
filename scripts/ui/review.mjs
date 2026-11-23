@@ -16,6 +16,7 @@ const nav = [
   { screenId: 'home', label: 'Home', order: 1 },
   { screenId: 'onboarding', label: 'Onboarding', order: 2 },
   { screenId: 'academic_years', label: 'Academic years', order: 21 },
+  { screenId: 'year_rollover', label: 'Year rollover', order: 22 },
   { screenId: 'classes', label: 'Classes', order: 23 },
   { screenId: 'enquiries', label: 'Enquiries', order: 35 },
   { screenId: 'enquiry_discussions', label: 'Enquiry discussions', order: 36 },
@@ -35,6 +36,7 @@ const nav = [
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
 const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create', 'stu.student_promotions.view', 'stu.student_promotions.create', 'stu.student_promotions.edit', 'stu.student_promotions.delete', 'stu.student_transfers.view', 'stu.student_transfers.create', 'stu.student_transfers.edit', 'stu.student_transfers.delete'];
+permissions.push('ten.year_rollover.view', 'ten.year_rollover.create', 'ten.year_rollover.edit');
 const admission = (n, o) => ({ id: `r${n}`, applicationNumber: `REG-0000${n}`, appliedOn: '2026-11-12', fullName: 'Diya Singh', dateOfBirth: '2021-03-14', gender: 'female', fatherName: 'Rahul Singh', motherName: null, guardianName: null, guardianPhone: '9810012345', classId: 'c1', className: 'Nursery', sectionId: null, sectionName: null, yearId: 'y1', yearName: '2027-28', status: 'accepted', admitted: false, admittedAt: null, studentId: null, studentCode: null, enrolledSectionName: null, rollNumber: null, ...o });
 const admissions = [admission(43, {}), admission(46, { fullName: 'Kabir Iyer', gender: null, className: 'Class 1', classId: 'c2' }), admission(47, { fullName: 'Aarav Sharma', sectionName: 'A' })];
 const students = [
@@ -187,6 +189,48 @@ const approvalDetail = {
   ],
 };
 
+// Year rollover (TEN-01)
+let rolloverMode = 'off';
+const rollYear = (id, code, name, start, end, cur) => ({ id, code, name, startDate: start, endDate: end, isCurrent: cur, status: 'active' });
+const rollY1 = rollYear('y1', '2026-27', '2026-27', '2026-04-01', '2027-03-31', true);
+const rollY2 = rollYear('y2', '2027-28', '2027-28', '2027-04-01', '2028-03-31', false);
+const rollStep = (id, title, description, o) => ({ id, title, description, defaultOn: true, irreversible: false, sourceCount: 2, targetCount: 0, ...o });
+const rollChecklist = () => ({
+  from: rollY1, to: rollY2, shift: { mode: 'years', years: 1, days: 0 }, promotions: { sections: 6, promoted: 2 },
+  notes: ['Elective groups, textbooks and chapters are not tied to an academic year, so there is nothing to copy; they carry over as they are.', 'Students are not moved here. Promote each class section on the Promotions screen once the new year has its class sections.'],
+  steps: [
+    rollStep('terms', 'Terms', 'Copy each term with its dates moved into the new year. A term is refused when its moved dates fall outside the new year or overlap a term it already has.', { sourceCount: 3, lastRun: { id: 'r0', ranAt: '2026-11-22T05:00:00Z', runByName: 'Asha Verma', createdCount: 3, existingCount: 0, skippedCount: 0, conflictCount: 0, reviewCount: 0 } }),
+    rollStep('class_sections', 'Class sections', 'Map the same sections to the same classes, with their capacity and room. Do this before the subject mappings and before promoting students.', { sourceCount: 24 }),
+    rollStep('subject_classes', 'Class subjects', 'Map the same subjects to the same classes (and sections). A subject set for one section needs that section mapped to the class in the new year first.', { sourceCount: 112 }),
+    rollStep('holidays', 'Holidays', 'Copy the holidays with dates moved by the year shift. Festival dates change every year, so public, regional and restricted holidays are marked for you to review. Holidays that repeat every year are not copied; they already apply.', { sourceCount: 18 }),
+    rollStep('calendar_events', 'Calendar events', 'Copy the academic calendar events with dates moved by the year shift. Off by default: events are usually planned afresh.', { defaultOn: false, sourceCount: 9 }),
+    rollStep('make_current', 'Make the new year current', 'Switch the institute to the new year. Attendance, fees, admissions and every screen that defaults to the current year start using it at once. Needs terms and class sections in the new year.', { defaultOn: false, irreversible: true, sourceCount: 0 }),
+  ],
+});
+const rollItem = (label, status, o) => ({ label, status, reason: '', message: '', detail: '', review: false, ...o });
+const rollResult = (step, o) => ({ step, dryRun: false, fromYearId: 'y1', toYearId: 'y2', createdCount: 0, existingCount: 0, skippedCount: 0, conflictCount: 0, reviewCount: 0, items: [], itemsTruncated: false, warnings: [], blockers: [], shift: { mode: 'years', years: 1, days: 0 }, runId: 'run1', ranAt: '2026-11-24T05:00:00Z', ...o });
+const rollPreviews = {
+  terms: rollResult('terms', { dryRun: true, runId: null, ranAt: null, createdCount: 2, conflictCount: 1, items: [
+    rollItem('T3 · Third term', 'conflict', { reason: 'outside_year', message: 'The moved dates fall outside 2027-28 (2027-04-01 to 2028-03-31).', detail: '2027-01-01 to 2027-04-15 becomes 2028-01-01 to 2028-04-15' }),
+    rollItem('T1 · First term', 'create', { detail: '2026-04-01 to 2026-09-30 becomes 2027-04-01 to 2027-09-30' }),
+    rollItem('T2 · Second term', 'create', { detail: '2026-10-01 to 2026-12-31 becomes 2027-10-01 to 2027-12-31' }),
+  ] }),
+  holidays: rollResult('holidays', { dryRun: true, runId: null, ranAt: null, createdCount: 14, existingCount: 1, skippedCount: 3, reviewCount: 9, items: [
+    rollItem('Diwali', 'create', { review: true, detail: '2026-11-08 to 2026-11-09 becomes 2027-11-08 to 2027-11-09', message: 'The date of a public holiday may change from year to year. Check it.' }),
+    rollItem('Republic Day', 'create', { review: true, detail: '2027-01-26 to 2027-01-26 becomes 2028-01-26 to 2028-01-26', message: 'The date of a public holiday may change from year to year. Check it.' }),
+    rollItem("Founders' Day", 'create', { detail: '2026-08-15 to 2026-08-15 becomes 2027-08-15 to 2027-08-15' }),
+    rollItem('Labour Day', 'skipped', { reason: 'recurring_annual', message: 'This holiday repeats every year, so it already applies to 2027-28.' }),
+    rollItem('Summer break', 'exists', { message: 'This holiday is already in 2027-28 on the moved dates.' }),
+  ] }),
+  make_current: rollResult('make_current', { dryRun: true, runId: null, ranAt: null, createdCount: 1, items: [rollItem('Make 2027-28 the current year', 'create', { detail: 'The current year changes from 2026-27 to 2027-28.' })],
+    warnings: ['4 of 6 class sections with students in 2026-27 have not been promoted into 2027-28 yet.', '2027-28 starts on 2027-04-01, which is still ahead.'] }),
+};
+const rollHistory = [
+  { id: 'h3', fromYearId: 'y1', fromYearName: '2026-27', toYearId: 'y2', toYearName: '2027-28', step: 'make_current', status: 'failed', createdCount: 0, existingCount: 0, skippedCount: 0, conflictCount: 0, reviewCount: 0, warnings: [], error: 'Blocked: 2027-28 has no class sections. Run the class sections step or map them first.', runByName: 'Asha Verma', ranAt: '2026-11-24T05:10:00Z' },
+  { id: 'h2', fromYearId: 'y1', fromYearName: '2026-27', toYearId: 'y2', toYearName: '2027-28', step: 'holidays', status: 'completed', createdCount: 14, existingCount: 1, skippedCount: 3, conflictCount: 0, reviewCount: 9, warnings: [], error: null, runByName: 'Asha Verma', ranAt: '2026-11-24T05:05:00Z' },
+  { id: 'h1', fromYearId: 'y1', fromYearName: '2026-27', toYearId: 'y2', toYearName: '2027-28', step: 'terms', status: 'completed', createdCount: 3, existingCount: 0, skippedCount: 0, conflictCount: 0, reviewCount: 0, warnings: [], error: null, runByName: 'Asha Verma', ranAt: '2026-11-22T05:00:00Z' },
+];
+
 async function mockApi(page, signedIn, mfa) {
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname.replace('/api/v1', '');
@@ -201,7 +245,16 @@ async function mockApi(page, signedIn, mfa) {
     if (path === '/me/access' && route.request().headers()['authorization'] === 'Bearer visit1')
       return json(200, { user: { id: 'p1', name: 'Rohan Mehta', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'stu', 'iam'] }, visit: { by: 'Rohan Mehta', reason: 'Fees report shows the wrong total for class 5', expiresAt: new Date(Date.now() + 18e5).toISOString() }, permissions: permissions.filter((p) => p.endsWith('.view')), scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 0 });
     if (path === '/me/access')
-      return json(200, { user: { id: 'u1', name: 'Asha Verma', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'adm', 'stu', 'iam', 'wfl'] }, permissions, scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 1 });
+      return json(200, { user: { id: 'u1', name: 'Asha Verma', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'adm', 'stu', 'iam', 'wfl', 'ten'] }, permissions, scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 1 });
+    if (rolloverMode !== 'off' && path === '/academic-years') return json(200, { items: rolloverMode === 'nonext' ? [rollY1] : [rollY1, rollY2], page: { number: 1, size: 200, total: 2 } });
+    if (rolloverMode !== 'off' && path === '/year-rollover/checklist') return json(200, rollChecklist());
+    if (rolloverMode !== 'off' && path === '/year-rollover/history') return json(200, { items: rolloverMode === 'empty' ? [] : rollHistory, page: { number: 1, size: 25, total: rolloverMode === 'empty' ? 0 : rollHistory.length } });
+    if (rolloverMode !== 'off' && path.startsWith('/year-rollover/steps/') && path.endsWith('/preview')) return json(200, rollPreviews[path.split('/')[3]] ?? rollResult(path.split('/')[3], { dryRun: true, runId: null, ranAt: null, createdCount: 2 }));
+    if (rolloverMode !== 'off' && path.startsWith('/year-rollover/steps/') && path.endsWith('/run')) {
+      const step = path.split('/')[3];
+      if (rolloverMode === 'failed' && step === 'class_sections') return json(500, { code: 'internal', detail: 'Something went wrong. Please try again.' });
+      return json(200, step === 'holidays' ? rollResult(step, { createdCount: 14, existingCount: 1, skippedCount: 3, reviewCount: 9 }) : step === 'terms' ? rollResult(step, { createdCount: 2, conflictCount: 1, items: rollPreviews.terms.items.slice(0, 1) }) : rollResult(step, { createdCount: step === 'make_current' ? 1 : 24, warnings: step === 'class_sections' ? ['2 mappings were copied without a room because the room no longer exists.'] : [] }));
+    }
     if (path === '/me/notifications') return json(200, { items: notifications, page: { number: 1, size: 10, total: notifications.length }, unreadCount: 3 });
     if (path.startsWith('/me/notifications/')) return route.fulfill({ status: 204 });
     if (path === '/approvals') return json(200, { items: approvalsEmpty ? [] : approvalInbox, page: { number: 1, size: 20, total: approvalsEmpty ? 0 : approvalInbox.length } });
@@ -281,6 +334,13 @@ async function promoPick(p) {
   await p.waitForSelector('text=Asha Rao');
 }
 
+async function rollOpen(p) {
+  await p.waitForSelector('option:has-text("2027-28")', { state: 'attached' });
+  await p.getByRole('button', { name: /Continue/ }).click();
+  await p.waitForSelector('text=Rollover steps', { state: 'attached' }).catch(() => {});
+  await p.waitForSelector('text=Cannot be undone from here');
+}
+
 const screens = [
   { name: 'signin', path: '/', signedIn: false, ready: 'text=Sign in' },
   { name: 'home', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma' },
@@ -300,6 +360,14 @@ const screens = [
   { name: 'registrations', path: '/registrations', signedIn: true, ready: 'text=Ishaan Verma' },
   { name: 'admissions', path: '/admissions', signedIn: true, ready: 'text=Diya Singh' },
   { name: 'admissions-admit', path: '/admissions', signedIn: true, ready: 'text=Diya Singh', then: (p) => p.getByRole('button', { name: /^Admit REG-000043/ }).click().then(() => p.waitForSelector('role=dialog')) },
+  { name: 'rollover-years', path: '/year-rollover', signedIn: true, rollover: 'ready', ready: 'text=Year being rolled over', then: (p) => p.waitForSelector('option:has-text("2027-28")', { state: 'attached' }) },
+  { name: 'rollover-new-year', path: '/year-rollover', signedIn: true, rollover: 'nonext', ready: 'text=Year being rolled over', then: (p) => p.waitForSelector('text=The new academic year') },
+  { name: 'rollover-checklist', full: true, path: '/year-rollover', signedIn: true, rollover: 'ready', ready: 'text=Year being rolled over', then: rollOpen },
+  { name: 'rollover-preview', full: true, path: '/year-rollover', signedIn: true, rollover: 'ready', ready: 'text=Year being rolled over', then: async (p) => { await rollOpen(p); await p.getByRole('button', { name: 'Preview Terms' }).click(); await p.getByRole('button', { name: 'Preview Holidays' }).click(); await p.waitForSelector('text=9 copied rows to check afterwards'); } },
+  { name: 'rollover-confirm', path: '/year-rollover', signedIn: true, rollover: 'ready', ready: 'text=Year being rolled over', then: async (p) => { await rollOpen(p); await p.getByRole('checkbox', { name: 'Include Make the new year current' }).check(); await p.getByRole('button', { name: /^Run 5 selected steps/ }).click(); await p.waitForSelector('role=alertdialog'); } },
+  { name: 'rollover-results', full: true, path: '/year-rollover', signedIn: true, rollover: 'ready', ready: 'text=Year being rolled over', then: async (p) => { await rollOpen(p); await p.getByRole('button', { name: /^Run 4 selected steps/ }).click(); await p.waitForSelector('text=Back to the checklist'); } },
+  { name: 'rollover-failed', path: '/year-rollover', signedIn: true, rollover: 'failed', ready: 'text=Year being rolled over', then: async (p) => { await rollOpen(p); await p.getByRole('button', { name: /^Run 4 selected steps/ }).click(); await p.waitForSelector('text=Class sections did not run'); } },
+  { name: 'rollover-history', path: '/year-rollover', signedIn: true, rollover: 'ready', ready: 'text=Year being rolled over', then: async (p) => { await p.getByRole('button', { name: 'History' }).click(); await p.waitForSelector('text=Blocked: 2027-28 has no class sections'); } },
   { name: 'promotions-step1', path: '/promotions', signedIn: true, promo: 'draft', ready: 'text=Which class section?', then: promoPick },
   { name: 'promotions-step2', path: '/promotions', signedIn: true, promo: 'problem', ready: 'text=Which class section?', then: async (p) => { await promoPick(p); await p.getByRole('button', { name: /Save and continue/ }).click(); await p.waitForSelector('text=Roll numbers in'); await p.getByRole('button', { name: 'Preview' }).click(); await p.waitForSelector('text=needs attention'); } },
   { name: 'promotions-step2-ready', path: '/promotions', signedIn: true, promo: 'draft', ready: 'text=Which class section?', then: async (p) => { await promoPick(p); await p.getByRole('button', { name: /Save and continue/ }).click(); await p.waitForSelector('text=Roll numbers in'); await p.getByRole('button', { name: 'Preview' }).click(); await p.waitForSelector('text=Ready:'); } },
@@ -379,6 +447,7 @@ for (const s of screens) {
     approvalsEmpty = Boolean(s.empty);
     insightsMode = s.insights ?? 'ready';
     promoMode = s.promo ?? 'off';
+    rolloverMode = s.rollover ?? 'off';
     transfersMode = s.transfers ?? 'ready';
     handoverDenied = Boolean(s.denied);
     await mockApi(page, s.signedIn, s.mfa);

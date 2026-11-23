@@ -1,5 +1,5 @@
 import {
-  ArrowRightLeft, BarChart3, BookMarked, ClipboardCheck, FileUser, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList,
+  ArrowRightLeft, BarChart3, CalendarSync, BookMarked, ClipboardCheck, FileUser, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList,
   Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, HeartHandshake, Home, Layers, Link2, MessagesSquare,
   Palette, ListChecks, ListOrdered, MapPin, School, ShieldCheck, Sun, Upload, UserCheck, UserCog, UserRound,
   UserSearch, Users, UserRoundCheck, TrendingUp, type LucideIcon,
@@ -12,6 +12,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   rooms: DoorOpen,
   academic_years: CalendarRange,
   academic_terms: CalendarDays,
+  year_rollover: CalendarSync,
   classes: Layers,
   sections: Columns3,
   subjects: BookOpen,
@@ -52,6 +53,7 @@ export const NAV_BLURBS: Record<string, string> = {
   rooms: 'Classrooms, labs and halls, with their capacity.',
   academic_years: 'The years your school runs, and which one is current.',
   academic_terms: 'The terms inside each academic year.',
+  year_rollover: 'Set up the next academic year from the one that is ending.',
   classes: 'The classes your school teaches, in order.',
   sections: 'The sections a class is divided into.',
   subjects: 'Every subject, with its area and credits.',

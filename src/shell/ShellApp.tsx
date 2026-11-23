@@ -20,6 +20,7 @@ import { InsightsPage } from '../features/adm/InsightsPage';
 import { enquiriesDescriptor } from '../features/adm/enquiries';
 import { AdmissionsPage } from '../features/adm/AdmissionsPage';
 import { PromotionsPage } from '../features/stu/PromotionsPage';
+import { YearRolloverPage } from '../features/ten/YearRolloverPage';
 import { enquiriesWithRegister, registrationsDescriptor } from '../features/adm/registrations';
 import { TransferCertificatePage } from '../features/stu/TransferCertificatePage';
 import { TransfersPage } from '../features/stu/TransfersPage';
@@ -85,6 +86,14 @@ function Gate() {
             element={
               <RequirePermission path="/admissions">
                 <AdmissionsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="year-rollover"
+            element={
+              <RequirePermission path="/year-rollover">
+                <YearRolloverPage />
               </RequirePermission>
             }
           />

@@ -11,6 +11,7 @@ export const registry = defineRegistry([
   { screenId: 'rooms', title: 'Rooms', permission: 'aca.rooms.view', module: 'aca', parity: 'Companion', web: { path: '/rooms' }, mobile: { route: '/rooms' } },
   { screenId: 'academic_years', title: 'Academic years', permission: 'aca.academic_years.view', module: 'aca', parity: 'Companion', web: { path: '/academic-years' }, mobile: { route: '/academic-years' } },
   { screenId: 'academic_terms', title: 'Terms', permission: 'aca.academic_terms.view', module: 'aca', parity: 'Companion', web: { path: '/academic-terms' }, mobile: { route: '/academic-terms' } },
+  { screenId: 'year_rollover', title: 'Year rollover', permission: 'ten.year_rollover.view', module: 'ten', parity: 'Web-only', web: { path: '/year-rollover' } },
   { screenId: 'classes', title: 'Classes', permission: 'aca.classes.view', module: 'aca', parity: 'Companion', web: { path: '/classes' }, mobile: { route: '/classes' } },
   { screenId: 'sections', title: 'Sections', permission: 'aca.sections.view', module: 'aca', parity: 'Companion', web: { path: '/sections' }, mobile: { route: '/sections' } },
   { screenId: 'subjects', title: 'Subjects', permission: 'aca.subjects.view', module: 'aca', parity: 'Companion', web: { path: '/subjects' }, mobile: { route: '/subjects' } },
