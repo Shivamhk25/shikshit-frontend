@@ -34,6 +34,22 @@ export interface ColumnDef<T> {
   render?: (row: T) => string;
 }
 
+/**
+ * An action on one row that calls the server and changes nothing in the form: a POST to `endpoint(row)` with an empty
+ * body, after a confirmation. It shows only to people who hold `permission`, on rows `visible` accepts.
+ */
+export interface RowAction<T> {
+  key: string;
+  label: string;
+  permission: string;
+  visible?: (row: T) => boolean;
+  endpoint: (row: T) => string;
+  /** The question asked before the call. */
+  confirm: (row: T) => { title: string; body: string };
+  /** What to tell the person once it worked, from the server's answer. */
+  success: (result: Record<string, unknown>) => string;
+}
+
 /** A filter above the table. A select sends its value as a query parameter; a toggle sends "true" when ticked. */
 export interface FilterDef {
   key: string;
@@ -63,6 +79,8 @@ export interface CrudDescriptor<T> {
   toInput: (values: FormValues) => Record<string, unknown>;
   /** Filters shown beside the search box; their values are sent with every list request. */
   filters?: FilterDef[];
+  /** Extra buttons in each row's Actions cell. */
+  rowActions?: RowAction<T>[];
   /**
    * Shown at the top of the edit sheet for an existing row (for example a student's photo). `form.setValue` changes a
    * field of the open form, for an extra that changes the record behind the form's back.
