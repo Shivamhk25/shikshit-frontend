@@ -52,9 +52,8 @@ function fakeServer(permissions: string[], initial: Enquiry[], opts: { failList?
     if (path === '/enquiries' && method === 'POST') {
       const errs = [];
       if (!String(body?.childName ?? '').trim()) errs.push({ field: 'childName', code: 'required', message: 'Enter the child’s name.' });
-      if (rows.some((r) => r.code === body?.code)) errs.push({ field: 'code', code: 'duplicate', message: 'Another enquiry already uses this code.' });
       if (errs.length) return problem(400, 'validation_failed', errs);
-      const r = { ...enquiry(0), ...(body as Partial<Enquiry>), id: 'id-new' } as Enquiry;
+      const r = { ...enquiry(0), ...(body as Partial<Enquiry>), id: 'id-new', code: `ENQ-${100 + rows.length}` } as Enquiry;
       rows.push(r);
       return json(201, r);
     }
@@ -137,16 +136,18 @@ describe('enquiries page', () => {
     const server = mount(ALL, [enquiry(1)]);
     await userEvent.click(await screen.findByRole('button', { name: 'Add enquiry' }));
     const sheet = await screen.findByRole('dialog', { name: 'Add enquiry' });
-    await userEvent.type(within(sheet).getByLabelText('Code *'), 'ENQ-9');
+    expect(within(sheet).queryByLabelText(/^Code/)).not.toBeInTheDocument(); // the number is given by the server
     await userEvent.type(within(sheet).getByLabelText('Child’s name *'), 'Anaya');
     await userEvent.type(within(sheet).getByLabelText('Enquirer’s name *'), 'Sunil Kumar');
     await userEvent.type(within(sheet).getByLabelText('Phone *'), '+91 98100 12345');
     await userEvent.selectOptions(within(sheet).getByLabelText('Source *'), 'referral');
     await userEvent.click(within(sheet).getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Anaya')).toBeInTheDocument();
+    expect(screen.getByText('ENQ-101')).toBeInTheDocument(); // the number the server gave, shown in the list
     expect(screen.getByRole('status')).toHaveTextContent('Enquiry added.');
     const post = server.calls.find((c) => c.method === 'POST' && c.path === '/enquiries')!;
-    expect(post.body).toMatchObject({ code: 'ENQ-9', childName: 'Anaya', source: 'referral', status: 'new', email: null, classId: null, assignedToId: null, followUpDate: null, notes: null });
+    expect(post.body).not.toHaveProperty('code');
+    expect(post.body).toMatchObject({ childName: 'Anaya', source: 'referral', status: 'new', email: null, classId: null, assignedToId: null, followUpDate: null, notes: null });
   });
 
   it('picks the assigned staff member through the colleague lookup, not the user list', async () => {
@@ -161,15 +162,13 @@ describe('enquiries page', () => {
     expect(server.calls.some((c) => c.path.startsWith('/users'))).toBe(false);
   });
 
-  it('shows field errors from the server, including a duplicate code', async () => {
+  it('shows field errors from the server', async () => {
     mount(ALL, [enquiry(1)]);
     await userEvent.click(await screen.findByRole('button', { name: 'Add enquiry' }));
     const sheet = await screen.findByRole('dialog');
-    await userEvent.type(within(sheet).getByLabelText('Code *'), 'ENQ-1');
     await userEvent.click(within(sheet).getByRole('button', { name: 'Save' }));
-    expect(await within(sheet).findByText('Another enquiry already uses this code.')).toBeInTheDocument();
-    expect(within(sheet).getByText('Enter the child’s name.')).toBeInTheDocument();
-    expect(within(sheet).getByLabelText('Code *')).toHaveAttribute('aria-invalid', 'true');
+    expect(await within(sheet).findByText('Enter the child’s name.')).toBeInTheDocument();
+    expect(within(sheet).getByLabelText('Child’s name *')).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('edits an enquiry with prefilled values and can change its status', async () => {
@@ -177,6 +176,7 @@ describe('enquiries page', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Edit ENQ-1 · Child 1' }));
     const sheet = await screen.findByRole('dialog', { name: 'Edit enquiry' });
     expect(within(sheet).getByLabelText('Child’s name *')).toHaveValue('Child 1');
+    expect(within(sheet).getByText('ENQ-1')).toBeInTheDocument(); // the number is shown, read-only
     await waitFor(() => expect(within(sheet).getByLabelText('Class')).toHaveValue('c1'));
     await userEvent.selectOptions(within(sheet).getByLabelText('Status *'), 'visit_scheduled');
     await userEvent.click(within(sheet).getByRole('button', { name: 'Save' }));
@@ -200,7 +200,7 @@ describe('enquiry descriptor', () => {
     expect(formatDate(null)).toBe('—');
   });
   it('turns blank optional fields into null and trims required ones', () => {
-    const input = enquiriesDescriptor.toInput({ code: ' E1 ', enquirerName: ' A ', phone: ' 123 ', childName: 'B', source: 'phone', status: '', email: ' ', notes: '' });
-    expect(input).toMatchObject({ code: 'E1', enquirerName: 'A', phone: '123', status: 'new', email: null, notes: null });
+    const input = enquiriesDescriptor.toInput({ enquirerName: ' A ', phone: ' 123 ', childName: 'B', source: 'phone', status: '', email: ' ', notes: '' });
+    expect(input).toMatchObject({ enquirerName: 'A', phone: '123', status: 'new', email: null, notes: null });
   });
 });

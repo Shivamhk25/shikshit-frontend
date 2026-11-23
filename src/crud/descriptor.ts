@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
  * search, side-sheet form, field errors, permission-aware controls, empty/error states).
  */
 
-export type FieldKind = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'checkbox';
+export type FieldKind = 'text' | 'textarea' | 'number' | 'date' | 'datetime' | 'select' | 'checkbox';
 
 export interface FieldDef {
   key: string;
@@ -22,8 +22,8 @@ export interface FieldDef {
   step?: number;
   /** For `select`: load the options from another resource's list endpoint instead of listing them here. */
   remote?: { endpoint: string; value: string; label: string; /** Too many to load whole: the person searches instead (students, guardians). */ search?: boolean; /** A second field shown in brackets after the label, to tell two people with the same name apart. */ detail?: string; /** Searches shorter than this (but not empty) are not sent; the server refuses them. */ minChars?: number; /** The key on the edited row that holds the label of the current value, for lookups that have no single-record endpoint. */ currentLabel?: string };
-  /** Shown in the form only (not a column). */
-  defaultValue?: string | number | boolean;
+  /** The starting value of a new item. A function is called each time the form opens (for "now"). */
+  defaultValue?: string | number | boolean | (() => string);
 }
 
 export interface ColumnDef<T> {
@@ -63,8 +63,11 @@ export interface CrudDescriptor<T> {
   toInput: (values: FormValues) => Record<string, unknown>;
   /** Filters shown beside the search box; their values are sent with every list request. */
   filters?: FilterDef[];
-  /** Shown at the top of the edit sheet for an existing row (for example a student's photo). */
-  editExtra?: (row: T) => ReactNode;
+  /**
+   * Shown at the top of the edit sheet for an existing row (for example a student's photo). `form.setValue` changes a
+   * field of the open form, for an extra that changes the record behind the form's back.
+   */
+  editExtra?: (row: T, form: { setValue: (key: string, value: string | number | boolean) => void }) => ReactNode;
 }
 
 export type FormValues = Record<string, string | number | boolean>;
@@ -72,6 +75,6 @@ export type FormValues = Record<string, string | number | boolean>;
 /** Starting values for a new item. */
 export function blankValues(fields: FieldDef[]): FormValues {
   const out: FormValues = {};
-  for (const f of fields) out[f.key] = f.defaultValue ?? (f.kind === 'checkbox' ? false : '');
+  for (const f of fields) out[f.key] = (typeof f.defaultValue === 'function' ? f.defaultValue() : f.defaultValue) ?? (f.kind === 'checkbox' ? false : '');
   return out;
 }
