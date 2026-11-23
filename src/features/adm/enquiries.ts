@@ -97,7 +97,7 @@ export const enquiriesDescriptor: CrudDescriptor<Enquiry> = {
     { key: 'source', label: 'Source', kind: 'select', required: true, options: SOURCES },
     { key: 'status', label: 'Status', kind: 'select', required: true, defaultValue: 'new', options: STATUSES },
     { key: 'followUpDate', label: 'Follow-up date', kind: 'date' },
-    { key: 'assignedToId', label: 'Assigned to', kind: 'select', hint: 'The staff member who follows this up.', remote: { endpoint: '/users', value: 'id', label: 'displayName', detail: 'username', search: true } },
+    { key: 'assignedToId', label: 'Assigned to', kind: 'select', hint: 'The staff member who follows this up.', remote: { endpoint: '/colleagues', value: 'id', label: 'displayName', detail: 'label', search: true, minChars: 2, currentLabel: 'assignedToName' } },
     { key: 'notes', label: 'Notes', kind: 'textarea', maxLength: 1000 },
   ],
   toForm: (r): FormValues => ({

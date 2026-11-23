@@ -40,7 +40,7 @@ function fakeServer(permissions: string[], initial: Enquiry[], opts: { failList?
     }
     if (path === '/classes') return json(200, { items: [{ id: 'c1', name: 'Class 5' }, { id: 'c2', name: 'Class 6' }], page: { number: 1, size: 200, total: 2 } });
     if (path === '/academic-years') return json(200, { items: [{ id: 'y1', name: '2027-28' }], page: { number: 1, size: 200, total: 1 } });
-    if (path === '/users') return json(200, { items: [{ id: 'u7', displayName: 'Ravi Nair', username: 'r.nair' }], page: { number: 1, size: 20, total: 1 } });
+    if (path === '/colleagues') return json(200, { items: [{ id: 'u7', displayName: 'Ravi Nair', label: 'Teacher' }], page: { number: 1, size: 20, total: 1 } });
     if (path === '/enquiries' && method === 'GET') {
       if (opts.failList) return problem(500, 'internal_error');
       const status = url.searchParams.get('status');
@@ -147,6 +147,18 @@ describe('enquiries page', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Enquiry added.');
     const post = server.calls.find((c) => c.method === 'POST' && c.path === '/enquiries')!;
     expect(post.body).toMatchObject({ code: 'ENQ-9', childName: 'Anaya', source: 'referral', status: 'new', email: null, classId: null, assignedToId: null, followUpDate: null, notes: null });
+  });
+
+  it('picks the assigned staff member through the colleague lookup, not the user list', async () => {
+    const server = mount(ALL, [enquiry(1)]);
+    await userEvent.click(await screen.findByRole('button', { name: 'Add enquiry' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Add enquiry' });
+    await userEvent.type(within(sheet).getByLabelText('Assigned to'), 'Rav');
+    const results = within(sheet).getByLabelText('Assigned to results');
+    await waitFor(() => expect(within(results).getByRole('option', { name: 'Ravi Nair (Teacher)' })).toBeInTheDocument());
+    await userEvent.selectOptions(results, 'u7');
+    expect(server.calls.some((c) => c.path.startsWith('/colleagues') && c.path.includes('q=Rav'))).toBe(true);
+    expect(server.calls.some((c) => c.path.startsWith('/users'))).toBe(false);
   });
 
   it('shows field errors from the server, including a duplicate code', async () => {
