@@ -16,6 +16,7 @@ import { AppearancePage } from '../features/iam/AppearancePage';
 import { RoomsPage } from '../features/aca/RoomsPage';
 import { ResourcePage } from '../features/aca/ResourcePage';
 import { discussionsDescriptor } from '../features/adm/discussions';
+import { InsightsPage } from '../features/adm/InsightsPage';
 import { enquiriesDescriptor } from '../features/adm/enquiries';
 import { enquiriesWithRegister, registrationsDescriptor } from '../features/adm/registrations';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
@@ -64,6 +65,14 @@ function Gate() {
             element={
               <RequirePermission path="/registrations">
                 <ResourcePage descriptor={registrationsDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="admission-insights"
+            element={
+              <RequirePermission path="/admission-insights">
+                <InsightsPage />
               </RequirePermission>
             }
           />

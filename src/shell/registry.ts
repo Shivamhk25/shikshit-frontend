@@ -25,6 +25,7 @@ export const registry = defineRegistry([
   { screenId: 'textbook_chapters', title: 'Textbook chapters', permission: 'aca.textbook_chapters.view', module: 'aca', parity: 'Companion', web: { path: '/textbook-chapters' }, mobile: { route: '/textbook-chapters' } },
   { screenId: 'enquiries', title: 'Enquiries', permission: 'adm.enquiry.view', module: 'adm', parity: 'Both', web: { path: '/enquiries' }, mobile: { route: '/enquiries' } },
   { screenId: 'enquiry_discussions', title: 'Enquiry discussions', permission: 'adm.enquiry_discussions.view', module: 'adm', parity: 'Both', web: { path: '/enquiry-discussions' }, mobile: { route: '/enquiry-discussions' } },
+  { screenId: 'admission_insights', title: 'Admission insights', permission: 'adm.admission_insights.view', module: 'adm', parity: 'Both', web: { path: '/admission-insights' }, mobile: { route: '/admission-insights' } },
   { screenId: 'registrations', title: 'Registrations', permission: 'adm.student_registrations.view', module: 'adm', parity: 'Both', web: { path: '/registrations' }, mobile: { route: '/registrations' } },
   { screenId: 'students', title: 'Students', permission: 'stu.students.view', module: 'stu', parity: 'Companion', web: { path: '/students' }, mobile: { route: '/students' } },
   { screenId: 'student_enrollments', title: 'Enrollments', permission: 'stu.students.view', module: 'stu', parity: 'Companion', web: { path: '/student-enrollments' }, mobile: { route: '/student-enrollments' } },
