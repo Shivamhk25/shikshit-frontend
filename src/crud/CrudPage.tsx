@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
-import { ChevronLeft, ChevronRight, Inbox, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FilePlus, Inbox, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Card, ConfirmDialog, Input, PageHeader, Sheet } from '../design-system';
 import { useAccessState } from '../shell/AccessProvider';
 import { ApiError, type CrudClient } from './client';
 import { SearchPicker, type PickerOption } from './SearchPicker';
-import { blankValues, type CrudDescriptor, type FieldDef, type FilterDef, type FormValues } from './descriptor';
+import { blankValues, type CrudDescriptor, type FieldDef, type FilterDef, type FormValues, type RowAction } from './descriptor';
 
 const PAGE_SIZE = 25;
 
@@ -19,13 +19,17 @@ const STATUS_TONE: Record<string, string> = {
   contacted: 'border-warning-line bg-warning-bg text-warning',
   visit_scheduled: 'border-warning-line bg-warning-bg text-warning',
   converted: 'border-success-line bg-success-bg text-success',
+  submitted: 'border-info-line bg-info-bg text-info',
+  under_review: 'border-warning-line bg-warning-bg text-warning',
+  accepted: 'border-success-line bg-success-bg text-success',
+  rejected: 'border-danger-line bg-danger-bg text-danger',
 };
 
 /** A status column reads as a small pill: green for live, amber for on hold, grey for everything that has ended. */
 function StatusBadge({ value, label }: { value: string; label?: string }) {
   const text = label ?? (value ? value[0].toUpperCase() + value.slice(1) : '—');
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_TONE[value] ?? 'border-line bg-subtle text-fg-muted'}`}>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_TONE[value] ?? 'border-line bg-subtle text-fg-muted'}`}>
       <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
       {text}
     </span>
@@ -176,6 +180,7 @@ export function CrudPage<T extends { id: string }>({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<T | null>(null);
   const [notice, setNotice] = useState('');
+  const [acting, setActing] = useState<{ action: RowAction<T>; row: T } | null>(null);
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [filterOptions, setFilterOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const [remote, setRemote] = useState<Record<string, { value: string; label: string }[]>>({});
@@ -288,6 +293,25 @@ export function CrudPage<T extends { id: string }>({
     }
   };
 
+  const runAction = async () => {
+    if (!acting || !optionsClient) return;
+    setSaving(true);
+    setFormError('');
+    try {
+      const result = await optionsClient(acting.action.endpoint(acting.row)).create({} as never);
+      const msg = acting.action.success(result as Record<string, unknown>);
+      setNotice(msg);
+      toast.success(msg);
+      setActing(null);
+      await load();
+    } catch (err) {
+      const fields = err instanceof ApiError ? Object.values(err.fields) : [];
+      setFormError(fields.length > 0 ? fields.join(' ') : err instanceof ApiError ? err.message : 'Something went wrong.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const sortKey = sort.replace(/^-/, '');
   const descending = sort.startsWith('-');
   const toggleSort = (key: string) => {
@@ -297,7 +321,8 @@ export function CrudPage<T extends { id: string }>({
 
   const filtered = Object.values(filterValues).some(Boolean);
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const showActions = canEdit || canDelete;
+  const rowActions = (d.rowActions ?? []).filter((a) => can(a.permission));
+  const showActions = canEdit || canDelete || rowActions.length > 0;
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, total);
   const cols = useMemo(() => d.columns, [d.columns]);
@@ -404,6 +429,23 @@ export function CrudPage<T extends { id: string }>({
                   ))}
                   {showActions ? (
                     <td className="space-x-1 whitespace-nowrap px-5 py-2.5 text-right">
+                      {rowActions
+                        .filter((a) => !a.visible || a.visible(row))
+                        .map((a) => (
+                          <Button
+                            key={a.key}
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setFormError('');
+                              setActing({ action: a, row });
+                            }}
+                            aria-label={`${a.label} ${d.label(row)}`}
+                          >
+                            <FilePlus aria-hidden="true" className="size-3.5" />
+                            {a.label}
+                          </Button>
+                        ))}
                       {canEdit ? (
                         <Button size="sm" variant="ghost" onClick={() => openEdit(row)} aria-label={`Edit ${d.label(row)}`}>
                           <Pencil aria-hidden="true" className="size-3.5" />
@@ -479,6 +521,25 @@ export function CrudPage<T extends { id: string }>({
             </div>
           </form>
         </Sheet>
+      ) : null}
+
+      {acting ? (
+        <ConfirmDialog open title={acting.action.confirm(acting.row).title} onClose={() => setActing(null)}>
+          <p className="text-sm text-fg-muted">{acting.action.confirm(acting.row).body}</p>
+          {formError ? (
+            <p role="alert" className="mt-3 text-sm text-danger">
+              {formError}
+            </p>
+          ) : null}
+          <div className="mt-5 flex gap-2">
+            <Button loading={saving} onClick={() => void runAction()}>
+              {acting.action.label}
+            </Button>
+            <Button variant="secondary" onClick={() => setActing(null)}>
+              Cancel
+            </Button>
+          </div>
+        </ConfirmDialog>
       ) : null}
 
       {deleting ? (

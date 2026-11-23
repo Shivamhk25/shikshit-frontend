@@ -23,7 +23,7 @@ export interface FieldDef {
   /** For `select`: load the options from another resource's list endpoint instead of listing them here. */
   remote?: { endpoint: string; value: string; label: string; /** Too many to load whole: the person searches instead (students, guardians). */ search?: boolean; /** A second field shown in brackets after the label, to tell two people with the same name apart. */ detail?: string };
   /** Shown in the form only (not a column). */
-  defaultValue?: string | number | boolean;
+  defaultValue?: string | number | boolean | (() => string);
 }
 
 export interface ColumnDef<T> {
@@ -32,6 +32,22 @@ export interface ColumnDef<T> {
   /** Sort key sent to the API; omit when the column is not sortable. */
   sort?: string;
   render?: (row: T) => string;
+}
+
+/**
+ * An action on one row that calls the server and changes nothing in the form: a POST to `endpoint(row)` with an empty
+ * body, after a confirmation. It shows only to people who hold `permission`, on rows `visible` accepts.
+ */
+export interface RowAction<T> {
+  key: string;
+  label: string;
+  permission: string;
+  visible?: (row: T) => boolean;
+  endpoint: (row: T) => string;
+  /** The question asked before the call. */
+  confirm: (row: T) => { title: string; body: string };
+  /** What to tell the person once it worked, from the server's answer. */
+  success: (result: Record<string, unknown>) => string;
 }
 
 /** A filter above the table. A select sends its value as a query parameter; a toggle sends "true" when ticked. */
@@ -63,6 +79,8 @@ export interface CrudDescriptor<T> {
   toInput: (values: FormValues) => Record<string, unknown>;
   /** Filters shown beside the search box; their values are sent with every list request. */
   filters?: FilterDef[];
+  /** Extra buttons in each row's Actions cell. */
+  rowActions?: RowAction<T>[];
   /** Shown at the top of the edit sheet for an existing row (for example a student's photo). */
   editExtra?: (row: T) => ReactNode;
 }
@@ -72,6 +90,6 @@ export type FormValues = Record<string, string | number | boolean>;
 /** Starting values for a new item. */
 export function blankValues(fields: FieldDef[]): FormValues {
   const out: FormValues = {};
-  for (const f of fields) out[f.key] = f.defaultValue ?? (f.kind === 'checkbox' ? false : '');
+  for (const f of fields) out[f.key] = (typeof f.defaultValue === 'function' ? f.defaultValue() : f.defaultValue) ?? (f.kind === 'checkbox' ? false : '');
   return out;
 }
