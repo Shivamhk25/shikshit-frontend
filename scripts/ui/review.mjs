@@ -26,6 +26,8 @@ const nav = [
   { screenId: 'guardians', label: 'Guardians', order: 42 },
   { screenId: 'promotions', label: 'Promotions', order: 45 },
   { screenId: 'transfers', label: 'Transfers', order: 46 },
+  { screenId: 'student_pauses', label: 'Pauses', order: 47 },
+  { screenId: 'alumni', label: 'Alumni', order: 48 },
   { screenId: 'scope_assignments', label: 'Class assignments', order: 60 },
   { screenId: 'users', label: 'Users', order: 61 },
   { screenId: 'roles', label: 'Roles', order: 62 },
@@ -34,7 +36,7 @@ const nav = [
   { screenId: 'approvals', label: 'Approvals', order: 70 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
-const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create', 'stu.student_promotions.view', 'stu.student_promotions.create', 'stu.student_promotions.edit', 'stu.student_promotions.delete', 'stu.student_transfers.view', 'stu.student_transfers.create', 'stu.student_transfers.edit', 'stu.student_transfers.delete'];
+const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create', 'stu.student_promotions.view', 'stu.student_promotions.create', 'stu.student_promotions.edit', 'stu.student_promotions.delete', 'stu.student_transfers.view', 'stu.student_transfers.create', 'stu.student_transfers.edit', 'stu.student_transfers.delete', 'stu.student_pauses.view', 'stu.student_pauses.create', 'stu.student_pauses.edit', 'stu.alumni.view'];
 const admission = (n, o) => ({ id: `r${n}`, applicationNumber: `REG-0000${n}`, appliedOn: '2026-11-12', fullName: 'Diya Singh', dateOfBirth: '2021-03-14', gender: 'female', fatherName: 'Rahul Singh', motherName: null, guardianName: null, guardianPhone: '9810012345', classId: 'c1', className: 'Nursery', sectionId: null, sectionName: null, yearId: 'y1', yearName: '2027-28', status: 'accepted', admitted: false, admittedAt: null, studentId: null, studentCode: null, enrolledSectionName: null, rollNumber: null, ...o });
 const admissions = [admission(43, {}), admission(46, { fullName: 'Kabir Iyer', gender: null, className: 'Class 1', classId: 'c2' }), admission(47, { fullName: 'Aarav Sharma', sectionName: 'A' })];
 const students = [
@@ -148,6 +150,24 @@ const transfers = [
 ];
 const certificate = { tcNumber: 'TC-000012', issuedOn: '2026-11-20', schoolName: 'Springfield Public School', student: { fullName: 'Asha Rao', registrationCode: 'R-0003', dateOfBirth: '2015-06-01', gender: 'female', admissionDate: '2021-04-05' }, className: 'Class 5', sectionName: 'A', yearName: '2026-27', lastAttendanceDate: '2026-11-08', reason: 'health', reasonLabel: 'Health', reasonNote: 'Advised a change of climate by the family doctor.', destinationSchool: 'Pune Public School', guardians: [{ name: 'Meera Rao', relation: 'mother' }, { name: 'Anil Rao', relation: 'father' }] };
 let transfersMode = 'ready';
+// Student pauses (STU-09) and Alumni (STU-10)
+const pause = (n, status, o) => ({ id: `p${n}`, student: { id: `s${n}`, name: 'Asha Rao', registrationCode: `R-000${n}` }, className: 'Class 5', sectionName: 'A', yearName: '2026-27', pausedFrom: '2026-11-03', days: status === 'cancelled' ? null : 20, expectedBack: '2026-12-15', overdue: false, reason: 'illness', reasonNote: null, status, endedOn: status === 'ended' ? '2026-11-23' : null, closeNote: null, figures: { owed: { status: 'not_tracked', note: 'Fee dues are not tracked yet' }, missed: { status: 'not_tracked', note: 'Attendance is not tracked yet' } }, createdAt: '2026-11-03T04:00:00Z', updatedAt: '2026-11-03T04:00:00Z', ...o });
+const pauses = [
+  pause(1, 'active', { student: { id: 's1', name: 'Kabir Mehta', registrationCode: 'R-0002' }, reason: 'family_relocation', reasonNote: 'Parents are posted in Dubai for the term.' }),
+  pause(2, 'active', { student: { id: 's2', name: 'Meera Iyer', registrationCode: 'R-0003' }, className: 'Class 8', sectionName: 'B', overdue: true, expectedBack: '2026-11-15', days: 25, reason: 'other', reasonNote: 'Training camp for the state team.' }),
+  pause(3, 'ended', { days: 14, pausedFrom: '2026-10-01', expectedBack: '2026-10-20', closeNote: 'Recovered fully.' }),
+  pause(4, 'cancelled', { student: { id: 's4', name: 'Ishaan Verma', registrationCode: 'R-0007' }, className: null, sectionName: null, yearName: null, expectedBack: null, reason: 'financial', pausedFrom: '2026-09-12' }),
+];
+const alumniRow = (n, o) => ({ id: `a${n}`, name: 'Farid Khan', registrationCode: `R-010${n}`, admissionDate: '2018-04-02', lastClassName: 'Class 8', lastSectionName: 'A', yearName: '2025-26', reason: 'graduated', reasonLabel: 'Graduated', exitDate: '2026-03-31', tcNumber: null, destinationSchool: null, lastAttendanceDate: null, ...o });
+const alumni = [
+  alumniRow(1, {}),
+  alumniRow(2, { name: 'Tara Nair', lastClassName: 'Class 5', lastSectionName: 'B', reason: 'transferred', reasonLabel: 'Transferred', exitDate: '2026-03-12', tcNumber: 'TC-000012', destinationSchool: 'Pune Public School', lastAttendanceDate: '2026-03-10' }),
+  alumniRow(3, { name: 'Gita Menon', lastClassName: 'Class 8', lastSectionName: 'B' }),
+  alumniRow(4, { name: 'Manu Joshi', lastClassName: 'Class 7', lastSectionName: null, yearName: '2024-25', reason: 'other', reasonLabel: 'Other', exitDate: null }),
+];
+let pausesMode = 'ready';
+let alumniMode = 'ready';
+
 
 let approvalsEmpty = false;
 let handoverDenied = false;
@@ -253,6 +273,19 @@ async function mockApi(page, signedIn, mfa) {
     }
     if (path === '/admission-insights') return insightsMode === 'error' ? json(500, { code: 'internal', detail: 'The figures could not be loaded. Please try again.' }) : json(200, insightsMode === 'empty' ? emptyInsights : insights);
     if (path === '/enquiries') return json(200, { items: enquiries, page: { number: 1, size: 25, total: enquiries.length } });
+    if (path === '/student-pauses' && route.request().method() === 'GET') {
+      if (pausesMode === 'error') return json(500, { code: 'internal', detail: 'The pauses could not be loaded. Please try again.' });
+      const items = pausesMode === 'empty' ? [] : pauses;
+      return json(200, { items, page: { number: 1, size: 25, total: items.length } });
+    }
+    if (path === '/student-pauses' && route.request().method() === 'POST') return pausesMode === 'conflict' ? json(409, { code: 'already_paused', detail: 'x' }) : json(201, pauses[0]);
+    if (path.startsWith('/student-pauses/')) return json(200, pauses[0]);
+    if (path === '/alumni') {
+      if (alumniMode === 'error') return json(500, { code: 'internal', detail: 'The alumni could not be loaded. Please try again.' });
+      const items = alumniMode === 'empty' ? [] : alumni;
+      return json(200, { items, page: { number: 1, size: 25, total: items.length } });
+    }
+    if (path === '/academic-years' && alumniMode !== 'off') return json(200, { items: [{ id: 'y1', name: '2025-26' }, { id: 'y2', name: '2026-27' }], page: { number: 1, size: 200, total: 2 } });
     if (path === '/student-transfers' && route.request().method() === 'GET') {
       if (transfersMode === 'error') return json(500, { code: 'internal', detail: 'The transfers could not be loaded. Please try again.' });
       const items = transfersMode === 'empty' ? [] : transfers;
@@ -319,6 +352,24 @@ const screens = [
   { name: 'transfers-cancel-confirm', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^Cancel transfer of Kabir Mehta/ }).click().then(() => p.waitForSelector('role=alertdialog')) },
   { name: 'transfers-empty', path: '/transfers', signedIn: true, transfers: 'empty', ready: 'text=No transfers yet' },
   { name: 'transfers-error', path: '/transfers', signedIn: true, transfers: 'error', ready: 'text=could not be loaded' },
+  { name: 'pauses', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta' },
+  { name: 'pauses-add', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: 'Pause a student' }).click().then(() => p.waitForSelector('role=dialog')) },
+  { name: 'pauses-add-other-error', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta', then: async (p) => { await p.getByRole('button', { name: 'Pause a student' }).click(); const d = p.getByRole('dialog', { name: 'Pause a student' }); await d.getByRole('combobox', { name: 'Reason *' }).selectOption('other'); await d.getByRole('button', { name: 'Pause student' }).click(); await d.getByText('Tell us the reason when you choose Other.').waitFor(); } },
+  { name: 'pauses-add-conflict', path: '/student-pauses', signedIn: true, pauses: 'conflict', ready: 'text=Kabir Mehta', then: async (p) => { await p.getByRole('button', { name: 'Pause a student' }).click(); const d = p.getByRole('dialog', { name: 'Pause a student' }); await d.getByRole('option', { name: /Asha Rao/ }).waitFor({ state: 'attached' }); await d.getByRole('combobox', { name: 'Student results' }).selectOption({ label: 'Asha Rao (R-0001) · Class 5 A' }); await d.getByRole('combobox', { name: 'Reason *' }).selectOption('illness'); await d.getByRole('button', { name: 'Pause student' }).click(); await d.getByRole('alert').waitFor(); } },
+  { name: 'pauses-edit', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^Edit pause of Kabir Mehta/ }).click().then(() => p.waitForSelector('role=dialog')) },
+  { name: 'pauses-detail-active', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^View pause of Kabir Mehta/ }).click().then(() => p.waitForSelector('[data-testid=pause-detail]')) },
+  { name: 'pauses-detail-overdue', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^View pause of Meera Iyer/ }).click().then(() => p.waitForSelector('[data-testid=pause-detail]')) },
+  { name: 'pauses-detail-ended', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^View pause of Asha Rao/ }).click().then(() => p.waitForSelector('[data-testid=pause-detail]')) },
+  { name: 'pauses-back-confirm', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^Mark Kabir Mehta/ }).click().then(() => p.waitForSelector('role=alertdialog')) },
+  { name: 'pauses-cancel-confirm', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^Cancel pause of Kabir Mehta/ }).click().then(() => p.waitForSelector('role=alertdialog')) },
+  { name: 'pauses-empty', path: '/student-pauses', signedIn: true, pauses: 'empty', ready: 'text=No pauses yet' },
+  { name: 'pauses-error', path: '/student-pauses', signedIn: true, pauses: 'error', ready: 'text=could not be loaded' },
+  { name: 'alumni', path: '/alumni', signedIn: true, ready: 'text=Farid Khan' },
+  { name: 'alumni-detail-transferred', path: '/alumni', signedIn: true, ready: 'text=Farid Khan', then: (p) => p.getByRole('button', { name: /^View details of Tara Nair/ }).click().then(() => p.waitForSelector('[data-testid=alumni-detail]')) },
+  { name: 'alumni-detail-graduated', path: '/alumni', signedIn: true, ready: 'text=Farid Khan', then: (p) => p.getByRole('button', { name: /^View details of Farid Khan/ }).click().then(() => p.waitForSelector('[data-testid=alumni-detail]')) },
+  { name: 'alumni-detail-unknown-date', path: '/alumni', signedIn: true, ready: 'text=Farid Khan', then: (p) => p.getByRole('button', { name: /^View details of Manu Joshi/ }).click().then(() => p.waitForSelector('[data-testid=alumni-detail]')) },
+  { name: 'alumni-empty', path: '/alumni', signedIn: true, alumni: 'empty', ready: 'text=No alumni yet' },
+  { name: 'alumni-error', path: '/alumni', signedIn: true, alumni: 'error', ready: 'text=could not be loaded' },
   { name: 'transfer-certificate', full: true, path: '/transfers/t3/certificate', signedIn: true, ready: 'role=heading[name="Transfer Certificate"]' },
   { name: 'transfer-certificate-print', full: true, path: '/transfers/t3/certificate', signedIn: true, print: true, a4: true, ready: 'role=heading[name="Transfer Certificate"]' },
   { name: 'transfer-certificate-not-completed', path: '/transfers/t1/certificate', signedIn: true, transfers: 'notcompleted', ready: 'text=No certificate yet' },
@@ -380,6 +431,8 @@ for (const s of screens) {
     insightsMode = s.insights ?? 'ready';
     promoMode = s.promo ?? 'off';
     transfersMode = s.transfers ?? 'ready';
+    pausesMode = s.pauses ?? 'ready';
+    alumniMode = s.alumni ?? 'ready';
     handoverDenied = Boolean(s.denied);
     await mockApi(page, s.signedIn, s.mfa);
     await page.goto(BASE + s.path);
