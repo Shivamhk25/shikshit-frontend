@@ -76,6 +76,14 @@ const parentAccounts = [
   ] },
 ];
 
+const ago = (mins) => new Date(Date.now() - mins * 60_000).toISOString();
+const notifications = [
+  { id: 'n1', kind: 'user.password_reset', title: 'Your password was reset', body: 'An administrator reset your password. Sign in again with the new one-time link.', link: '/profile', createdAt: ago(4), readAt: null },
+  { id: 'n2', kind: 'user.invited', title: 'Ravi Nair accepted the invitation', body: 'Ravi Nair set a password and can now sign in to Springfield Public School.', link: '/users', createdAt: ago(95), readAt: null },
+  { id: 'n3', kind: 'import.finished', title: 'Student import finished', body: '118 students were added and 2 rows need a look. Download the list of rows that were skipped.', link: null, createdAt: ago(60 * 26), readAt: null },
+  { id: 'n4', kind: 'user.locked', title: 'An account was locked', body: 'Priya Sharma was locked after five wrong passwords.', link: '/users', createdAt: ago(60 * 24 * 4), readAt: ago(60 * 24 * 3) },
+];
+
 async function mockApi(page, signedIn, mfa) {
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname.replace('/api/v1', '');
@@ -91,6 +99,8 @@ async function mockApi(page, signedIn, mfa) {
       return json(200, { user: { id: 'p1', name: 'Rohan Mehta', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'stu', 'iam'] }, visit: { by: 'Rohan Mehta', reason: 'Fees report shows the wrong total for class 5', expiresAt: new Date(Date.now() + 18e5).toISOString() }, permissions: permissions.filter((p) => p.endsWith('.view')), scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 0 });
     if (path === '/me/access')
       return json(200, { user: { id: 'u1', name: 'Asha Verma', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'stu', 'iam'] }, permissions, scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 1 });
+    if (path === '/me/notifications') return json(200, { items: notifications, page: { number: 1, size: 10, total: notifications.length }, unreadCount: 3 });
+    if (path.startsWith('/me/notifications/')) return route.fulfill({ status: 204 });
     if (path === '/scope-assignments') return json(200, { items: [
       { id: 'a1', userId: 'u2', userName: 'Ravi Nair', scopeType: 'class_section', scopeRef: 'c1', label: 'Class 5 A (2026-27)', startsAt: '2026-06-01T00:00:00Z', endsAt: null, createdAt: '' },
       { id: 'a2', userId: 'u2', userName: 'Ravi Nair', scopeType: 'class_section', scopeRef: 'c2', label: 'Class 5 B (2026-27)', startsAt: '2026-06-01T00:00:00Z', endsAt: '2027-03-31T00:00:00Z', createdAt: '' },
@@ -152,6 +162,7 @@ const screens = [
   { name: 'console-team', path: '/console/team', signedIn: true, ready: 'text=Kabir Rao' },
   { name: 'console-accept-invite', path: '/console/accept-invite?token=abc', signedIn: false, ready: 'text=Set your password' },
   { name: 'student-edit-photo', path: '/students', signedIn: true, ready: 'text=Kabir Mehta', then: async (p) => { await p.getByRole('button', { name: /^Edit Kabir Mehta/ }).click(); await p.waitForSelector('text=Change photo'); } },
+  { name: 'notifications-panel', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: async (p) => { await p.getByRole('button', { name: 'Notifications' }).click(); await p.waitForSelector('text=Student import finished'); } },
   { name: 'palette', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: (p) => p.keyboard.press('Control+k').then(() => p.waitForSelector('role=dialog')) },
 ];
 const sizes = [
