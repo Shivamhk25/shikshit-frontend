@@ -5,7 +5,7 @@ import { Button, Card, ConfirmDialog, Input, PageHeader, Sheet } from '../design
 import { useAccessState } from '../shell/AccessProvider';
 import { ApiError, type CrudClient } from './client';
 import { SearchPicker, type PickerOption } from './SearchPicker';
-import { blankValues, type CrudDescriptor, type FieldDef, type FormValues } from './descriptor';
+import { blankValues, type CrudDescriptor, type FieldDef, type FilterDef, type FormValues } from './descriptor';
 
 const PAGE_SIZE = 25;
 
@@ -15,6 +15,10 @@ const STATUS_TONE: Record<string, string> = {
   completed: 'border-info-line bg-info-bg text-info',
   paused: 'border-warning-line bg-warning-bg text-warning',
   withdrawn: 'border-warning-line bg-warning-bg text-warning',
+  new: 'border-info-line bg-info-bg text-info',
+  contacted: 'border-warning-line bg-warning-bg text-warning',
+  visit_scheduled: 'border-warning-line bg-warning-bg text-warning',
+  converted: 'border-success-line bg-success-bg text-success',
 };
 
 /** A status column reads as a small pill: green for live, amber for on hold, grey for everything that has ended. */
@@ -109,6 +113,30 @@ function FieldControl({ field, value, error, onChange, options }: { field: Field
   );
 }
 
+const FILTER_CONTROL = 'h-10 rounded-md border border-line bg-surface px-3 text-sm text-fg shadow-soft hover:border-line-strong focus-visible:border-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent-subtle';
+
+/** One filter above the table: a labelled select, or a tick box that narrows the list when ticked. */
+function FilterControl({ filter, value, options, onChange }: { filter: FilterDef; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) {
+  if (filter.kind === 'toggle') {
+    return (
+      <label className="flex h-10 items-center gap-2 text-sm text-fg">
+        <input type="checkbox" checked={value === 'true'} onChange={(e) => onChange(e.target.checked ? 'true' : '')} />
+        {filter.label}
+      </label>
+    );
+  }
+  return (
+    <select aria-label={filter.label} className={FILTER_CONTROL} value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">{`All ${filter.label.toLowerCase()}`}</option>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 type Editing = { mode: 'create' } | { mode: 'edit'; row: { id: string } };
 
 /**
@@ -148,6 +176,8 @@ export function CrudPage<T extends { id: string }>({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<T | null>(null);
   const [notice, setNotice] = useState('');
+  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+  const [filterOptions, setFilterOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const [remote, setRemote] = useState<Record<string, { value: string; label: string }[]>>({});
 
   // Options that come from another resource (for example the academic year of a term) load when the form first opens.
@@ -163,6 +193,19 @@ export function CrudPage<T extends { id: string }>({
     });
   }, [editing, optionsClient, d.fields, remote]);
 
+  // Filters whose options come from another resource (the class filter) load once, when the page opens.
+  useEffect(() => {
+    if (!optionsClient) return;
+    (d.filters ?? []).forEach((f) => {
+      const src = f.remote;
+      if (!src) return;
+      optionsClient(src.endpoint)
+        .list({ page: 1, pageSize: 200, sort: undefined })
+        .then((r) => setFilterOptions((prev) => ({ ...prev, [f.key]: r.items.map((row) => ({ value: String(row[src.value]), label: String(row[src.label]) })) })))
+        .catch(() => setFilterOptions((prev) => ({ ...prev, [f.key]: [] })));
+    });
+  }, [optionsClient, d.filters]);
+
   useEffect(() => {
     const t = setTimeout(() => {
       setQuery(search.trim());
@@ -175,7 +218,7 @@ export function CrudPage<T extends { id: string }>({
     const mine = ++latest.current;
     setState('loading');
     try {
-      const r = await client.list({ page, pageSize: PAGE_SIZE, sort, q: query });
+      const r = await client.list({ page, pageSize: PAGE_SIZE, sort, q: query, filters: filterValues });
       if (mine !== latest.current) return; // a newer request superseded this one
       setRows(r.items);
       setTotal(r.total);
@@ -185,7 +228,7 @@ export function CrudPage<T extends { id: string }>({
       setError(e instanceof ApiError ? e.message : 'Something went wrong.');
       setState('error');
     }
-  }, [client, page, sort, query]);
+  }, [client, page, sort, query, filterValues]);
 
   useEffect(() => {
     void load();
@@ -252,6 +295,7 @@ export function CrudPage<T extends { id: string }>({
     setPage(1);
   };
 
+  const filtered = Object.values(filterValues).some(Boolean);
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const showActions = canEdit || canDelete;
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
@@ -273,9 +317,23 @@ export function CrudPage<T extends { id: string }>({
         }
       />
 
-      <div className="relative max-w-sm">
+      <div className="flex flex-wrap items-center gap-3">
+      <div className="relative w-full max-w-sm">
         <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
         <input type="search" aria-label={`Search ${d.title.toLowerCase()}`} placeholder={d.searchPlaceholder} value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 w-full rounded-md border border-line bg-surface pl-10 pr-3 text-sm text-fg shadow-soft placeholder:text-fg-subtle hover:border-line-strong focus-visible:border-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent-subtle" />
+      </div>
+      {(d.filters ?? []).map((f) => (
+        <FilterControl
+          key={f.key}
+          filter={f}
+          value={filterValues[f.key] ?? ''}
+          options={f.options ?? filterOptions[f.key] ?? []}
+          onChange={(v) => {
+            setFilterValues((prev) => ({ ...prev, [f.key]: v }));
+            setPage(1);
+          }}
+        />
+      ))}
       </div>
 
       {/* the toast is what people see; this live region is what a screen reader hears */}
@@ -319,8 +377,8 @@ export function CrudPage<T extends { id: string }>({
                 <tr>
                   <td colSpan={cols.length + (showActions ? 1 : 0)} className="px-5 py-16 text-center text-fg-muted">
                     <Inbox aria-hidden="true" className="mx-auto mb-3 size-6 text-fg-subtle" />
-                    {query ? `No ${d.title.toLowerCase()} match “${query}”.` : `No ${d.title.toLowerCase()} yet.`}
-                    {!query && canCreate ? ` Use “Add ${d.singular}” to create the first one.` : ''}
+                    {query || filtered ? (query ? `No ${d.title.toLowerCase()} match “${query}”.` : `No ${d.title.toLowerCase()} match these filters.`) : `No ${d.title.toLowerCase()} yet.`}
+                    {!query && !filtered && canCreate ? ` Use “Add ${d.singular}” to create the first one.` : ''}
                   </td>
                 </tr>
               ) : null}
@@ -334,7 +392,7 @@ export function CrudPage<T extends { id: string }>({
               {rows.map((row) => (
                 <tr key={row.id} className="border-b border-line-subtle transition-colors last:border-0 hover:bg-canvas">
                   {cols.map((c, i) => (
-                    <td key={c.key} className={i === 0 ? 'px-5 py-3.5 font-medium text-fg' : 'px-5 py-3.5 text-fg-muted'}>
+                    <td key={c.key} className={i === 0 ? 'whitespace-nowrap px-5 py-3.5 font-medium text-fg' : 'px-5 py-3.5 text-fg-muted'}>
                       {c.key === 'status' ? (
                         <StatusBadge value={String((row as Record<string, unknown>).status ?? '')} label={c.render ? c.render(row) : undefined} />
                       ) : c.render ? (

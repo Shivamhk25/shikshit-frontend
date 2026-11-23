@@ -34,6 +34,16 @@ export interface ColumnDef<T> {
   render?: (row: T) => string;
 }
 
+/** A filter above the table. A select sends its value as a query parameter; a toggle sends "true" when ticked. */
+export interface FilterDef {
+  key: string;
+  label: string;
+  kind: 'select' | 'toggle';
+  options?: { value: string; label: string }[];
+  /** Options loaded from another resource's list endpoint. */
+  remote?: { endpoint: string; value: string; label: string };
+}
+
 export interface CrudDescriptor<T> {
   /** Singular name for buttons and dialogs: "room". */
   singular: string;
@@ -51,6 +61,8 @@ export interface CrudDescriptor<T> {
   toForm: (row: T) => FormValues;
   /** Maps form values to the request body. */
   toInput: (values: FormValues) => Record<string, unknown>;
+  /** Filters shown beside the search box; their values are sent with every list request. */
+  filters?: FilterDef[];
   /** Shown at the top of the edit sheet for an existing row (for example a student's photo). */
   editExtra?: (row: T) => ReactNode;
 }
