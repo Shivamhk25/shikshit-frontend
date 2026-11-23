@@ -56,7 +56,7 @@ function describeRemote(client: OptionsClient, f: FieldDef, id: string, row?: Re
     .catch(() => null);
 }
 
-function FieldControl({ field, value, error, onChange, options }: { field: FieldDef; value: string | number | boolean; error?: string; onChange: (v: string | number | boolean) => void; options?: { value: string; label: string }[] }) {
+export function FieldControl({ field, value, error, onChange, options }: { field: FieldDef; value: string | number | boolean; error?: string; onChange: (v: string | number | boolean) => void; options?: { value: string; label: string }[] }) {
   const id = useId();
   if (field.kind === 'checkbox') {
     return (
@@ -66,11 +66,11 @@ function FieldControl({ field, value, error, onChange, options }: { field: Field
       </label>
     );
   }
-  if (field.kind === 'text' || field.kind === 'number' || field.kind === 'date') {
+  if (field.kind === 'text' || field.kind === 'number' || field.kind === 'date' || field.kind === 'datetime') {
     return (
       <Input
         label={field.required ? `${field.label} *` : field.label}
-        type={field.kind === 'number' ? 'number' : field.kind === 'date' ? 'date' : 'text'}
+        type={field.kind === 'number' ? 'number' : field.kind === 'date' ? 'date' : field.kind === 'datetime' ? 'datetime-local' : 'text'}
         step={field.step}
         value={String(value)}
         onChange={(e) => onChange(e.target.value)}
@@ -449,7 +449,7 @@ export function CrudPage<T extends { id: string }>({
       {editing ? (
         <Sheet open title={editing.mode === 'create' ? `Add ${d.singular}` : `Edit ${d.singular}`} onClose={close}>
           <form onSubmit={(e) => void submit(e)} className="flex flex-1 flex-col gap-4" noValidate>
-            {editing.mode === 'edit' && d.editExtra ? d.editExtra(editing.row as T) : null}
+            {editing.mode === 'edit' && d.editExtra ? d.editExtra(editing.row as T, { setValue: (key, value) => setValues((prev) => ({ ...prev, [key]: value })) }) : null}
             {d.fields.map((f) =>
               f.remote?.search && optionsClient ? (
                 <SearchPicker
