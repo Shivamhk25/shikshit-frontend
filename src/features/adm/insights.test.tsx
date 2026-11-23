@@ -19,11 +19,11 @@ function fixture(over: Partial<AdmissionInsights> = {}): AdmissionInsights {
       bySource: { walk_in: 500, phone: 250, website: 200, referral: 150, social: 100, other: 50 },
     },
     followUps: { due: 12, dueToday: 5, overdue: 7 },
-    registrations: { total: 480, byStatus: { submitted: 100, under_review: 80, accepted: 240, rejected: 40, withdrawn: 20 } },
+    registrations: { total: 480, admitted: 180, byStatus: { submitted: 100, under_review: 80, accepted: 240, rejected: 40, withdrawn: 20 } },
     conversion: {
       enquiryToRegistration: { of: 1250, converted: 400, rate: 0.32 },
       registrationToAccepted: { of: 480, converted: 240, rate: 0.5 },
-      acceptedToAdmitted: null,
+      acceptedToAdmitted: { of: 240, converted: 180, rate: 0.75 },
     },
     trend: [
       { month: '2026-09', enquiries: 100, registrations: 30 },
@@ -68,7 +68,7 @@ function mount(path: string, permissions: string[], data: AdmissionInsights | ((
   return { calls };
 }
 
-const PERMS = [VIEW, 'adm.enquiry.view', 'adm.student_registrations.view'];
+const PERMS = [VIEW, 'adm.enquiry.view', 'adm.student_registrations.view', 'adm.admissions.view'];
 
 describe('insights helpers', () => {
   it('formats counts the Indian way and a missing rate as a dash', () => {
@@ -91,6 +91,7 @@ describe('insights helpers', () => {
     expect(drillHref('enquiries', { yearId: 'y1', classId: 'c1', from: '2026-01-01', to: '' }, { followUpDue: 'true' })).toBe('/enquiries?followUpDue=true&classId=c1');
     expect(drillHref('registrations', { yearId: 'y1', classId: 'c1', from: '', to: '' }, { status: 'accepted' })).toBe('/registrations?status=accepted&classId=c1&yearId=y1');
     expect(drillHref('registrations', NO_FILTERS)).toBe('/registrations');
+    expect(drillHref('admissions', { yearId: 'y1', classId: 'c1', from: '2026-01-01', to: '2026-02-01' }, { state: 'admitted' })).toBe('/admissions?state=admitted&classId=c1&yearId=y1');
   });
 
   it('writes the figures as CSV, leaving a missing rate empty', () => {
@@ -100,11 +101,14 @@ describe('insights helpers', () => {
     expect(csv).toContain('Conversion,Enquiry to registration,32%');
     expect(csv).toContain('Conversion,Registration to accepted,\n');
     expect(csv).toContain('Monthly trend,Oct 2026: registrations,60');
+    expect(csv).toContain('Registrations,Admitted,180');
+    expect(csv).toContain('Conversion,Registrations admitted,180');
+    expect(csv).toContain('Conversion,Accepted to admitted,75%');
   });
 });
 
 describe('admission insights page', () => {
-  it('shows the key figures, the funnel and the Admitted placeholder without a number', async () => {
+  it('shows the key figures and the funnel with the Admitted step', async () => {
     mount('/admission-insights', PERMS);
     const kpis = await screen.findByRole('list', { name: 'Key figures' });
     expect(within(kpis).getByText('1,250')).toBeInTheDocument();
@@ -113,16 +117,37 @@ describe('admission insights page', () => {
     expect(within(kpis).getByText('32%')).toBeInTheDocument();
     const funnel = screen.getByRole('region', { name: 'From enquiry to a place' });
     expect(within(funnel).getByText('400 of 1,250 enquiries have a registration')).toBeInTheDocument();
+    expect(within(funnel).getByText('180 of 240 accepted registrations admitted')).toBeInTheDocument();
     const admitted = screen.getByTestId('funnel-admitted');
     expect(admitted).toHaveTextContent('Admitted');
-    expect(admitted).toHaveTextContent('Nothing is counted here yet');
-    expect(admitted.textContent).not.toMatch(/\d/);
+    expect(admitted).toHaveTextContent('180');
+    expect(admitted).not.toHaveTextContent('Comes with the admission step');
+    const kpi = within(kpis).getByRole('link', { name: 'Admitted, open the list' });
+    expect(kpi).toHaveTextContent('180');
+    expect(kpi).toHaveTextContent('75% of accepted');
+  });
+
+  it('shows Admitted as 0 with a dash when nothing is accepted', async () => {
+    mount('/admission-insights', PERMS, fixture({
+      registrations: { ...fixture().registrations, admitted: 0, byStatus: { ...fixture().registrations.byStatus, accepted: 0 } },
+      conversion: { ...fixture().conversion, acceptedToAdmitted: { of: 0, converted: 0, rate: null } },
+    }));
+    const kpis = await screen.findByRole('list', { name: 'Key figures' });
+    expect(within(within(kpis).getByRole('link', { name: 'Admitted, open the list' })).getByText('0')).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'From enquiry to a place' })).getByText(/No accepted registrations admitted yet to measure/)).toBeInTheDocument();
+  });
+
+  it('still draws the funnel and the Admitted figure for an older server that sends no admitted step', async () => {
+    mount('/admission-insights', PERMS, fixture({ conversion: { ...fixture().conversion, acceptedToAdmitted: null } }));
+    await screen.findByRole('list', { name: 'Key figures' });
+    expect(screen.getByTestId('funnel-admitted')).toHaveTextContent('Admitted');
+    expect(screen.queryByText(/accepted registrations admitted/)).not.toBeInTheDocument();
   });
 
   it('shows a dash when a rate is null', async () => {
     mount('/admission-insights', PERMS, fixture({
       enquiries: { ...fixture().enquiries, total: 0 },
-      conversion: { enquiryToRegistration: { of: 0, converted: 0, rate: null }, registrationToAccepted: { of: 480, converted: 240, rate: 0.5 }, acceptedToAdmitted: null },
+      conversion: { enquiryToRegistration: { of: 0, converted: 0, rate: null }, registrationToAccepted: { of: 480, converted: 240, rate: 0.5 }, acceptedToAdmitted: { of: 240, converted: 180, rate: 0.75 } },
     }));
     const kpis = await screen.findByRole('list', { name: 'Key figures' });
     expect(within(kpis).getByText('—')).toBeInTheDocument();
@@ -145,6 +170,8 @@ describe('admission insights page', () => {
     await screen.findByRole('list', { name: 'Key figures' });
     expect(screen.getByRole('link', { name: 'Enquiries, open the list' })).toHaveAttribute('href', '/enquiries');
     expect(screen.getByRole('link', { name: 'Accepted, open the list' })).toHaveAttribute('href', '/registrations?status=accepted');
+    expect(screen.getByRole('link', { name: 'Admitted, open the list' })).toHaveAttribute('href', '/admissions?state=admitted');
+    expect(screen.getByRole('link', { name: 'Open admitted students' })).toHaveAttribute('href', '/admissions?state=admitted');
     expect(screen.getByRole('link', { name: 'Referral enquiries, open the list' })).toHaveAttribute('href', '/enquiries?source=referral');
     expect(screen.getByRole('link', { name: 'Visit scheduled enquiries, open the list' })).toHaveAttribute('href', '/enquiries?status=visit_scheduled');
     expect(screen.getByRole('link', { name: 'Under review registrations, open the list' })).toHaveAttribute('href', '/registrations?status=under_review');
@@ -156,6 +183,7 @@ describe('admission insights page', () => {
     mount('/admission-insights', [VIEW]);
     await screen.findByRole('list', { name: 'Key figures' });
     expect(screen.queryByRole('link', { name: /open the list/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Open admitted students/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /See these enquiries/ })).not.toBeInTheDocument();
     expect(within(screen.getByRole('list', { name: 'Key figures' })).getByText('1,250')).toBeInTheDocument();
   });

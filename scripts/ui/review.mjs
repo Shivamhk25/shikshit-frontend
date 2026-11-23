@@ -67,11 +67,11 @@ const insights = {
   asOf: '2026-11-23T10:00:00Z', trendFrom: '2025-12', trendTo: '2026-11',
   enquiries: { total: 1250, byStatus: { new: 400, contacted: 300, visit_scheduled: 150, converted: 300, closed: 100 }, bySource: { walk_in: 500, phone: 250, website: 200, referral: 150, social: 100, other: 50 } },
   followUps: { due: 12, dueToday: 5, overdue: 7 },
-  registrations: { total: 480, byStatus: { submitted: 100, under_review: 80, accepted: 240, rejected: 40, withdrawn: 20 } },
-  conversion: { enquiryToRegistration: { of: 1250, converted: 400, rate: 0.32 }, registrationToAccepted: { of: 480, converted: 240, rate: 0.5 }, acceptedToAdmitted: null },
+  registrations: { total: 480, admitted: 180, byStatus: { submitted: 100, under_review: 80, accepted: 240, rejected: 40, withdrawn: 20 } },
+  conversion: { enquiryToRegistration: { of: 1250, converted: 400, rate: 0.32 }, registrationToAccepted: { of: 480, converted: 240, rate: 0.5 }, acceptedToAdmitted: { of: 240, converted: 180, rate: 0.75 } },
   trend: [['2025-12', 40, 10], ['2026-01', 90, 30], ['2026-02', 140, 55], ['2026-03', 210, 80], ['2026-04', 180, 70], ['2026-05', 60, 25], ['2026-06', 30, 8], ['2026-07', 55, 12], ['2026-08', 120, 40], ['2026-09', 150, 60], ['2026-10', 130, 55], ['2026-11', 45, 35]].map(([month, enquiries, registrations]) => ({ month, enquiries, registrations })),
 };
-const emptyInsights = { ...insights, enquiries: { total: 0, byStatus: { new: 0, contacted: 0, visit_scheduled: 0, converted: 0, closed: 0 }, bySource: { walk_in: 0, phone: 0, website: 0, referral: 0, social: 0, other: 0 } }, followUps: { due: 0, dueToday: 0, overdue: 0 }, registrations: { total: 0, byStatus: { submitted: 0, under_review: 0, accepted: 0, rejected: 0, withdrawn: 0 } }, conversion: { enquiryToRegistration: { of: 0, converted: 0, rate: null }, registrationToAccepted: { of: 0, converted: 0, rate: null }, acceptedToAdmitted: null }, trend: insights.trend.map((t) => ({ ...t, enquiries: 0, registrations: 0 })) };
+const emptyInsights = { ...insights, enquiries: { total: 0, byStatus: { new: 0, contacted: 0, visit_scheduled: 0, converted: 0, closed: 0 }, bySource: { walk_in: 0, phone: 0, website: 0, referral: 0, social: 0, other: 0 } }, followUps: { due: 0, dueToday: 0, overdue: 0 }, registrations: { total: 0, admitted: 0, byStatus: { submitted: 0, under_review: 0, accepted: 0, rejected: 0, withdrawn: 0 } }, conversion: { enquiryToRegistration: { of: 0, converted: 0, rate: null }, registrationToAccepted: { of: 0, converted: 0, rate: null }, acceptedToAdmitted: { of: 0, converted: 0, rate: null } }, trend: insights.trend.map((t) => ({ ...t, enquiries: 0, registrations: 0 })) };
 let insightsMode = 'ready';
 const users = [
   { id: 'u1', username: 'asha.verma', displayName: 'Asha Verma', email: 'asha@springfield.edu.in', phone: null, status: 'active', lockedUntil: null, lastLoginAt: '2026-11-20T09:12:00Z' },

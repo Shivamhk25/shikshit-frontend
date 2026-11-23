@@ -138,6 +138,22 @@ describe('admissions queue', () => {
     expect(calls.some((c) => c.path.includes('state=admitted'))).toBe(true);
     expect(screen.getByRole('link', { name: 'STU-000007' })).toHaveAttribute('href', '/students?q=STU-000007');
   });
+
+  it('opens on the admitted list, class and year taken from the address (the insights links)', async () => {
+    const calls = mount('/admissions?state=admitted&classId=c1&yearId=y1', ALL, [adm(1), adm(2, { admitted: true, studentCode: 'STU-000007', admittedAt: '2026-11-12T00:00:00Z' })]);
+    expect(await screen.findByText('Child2 Rao')).toBeInTheDocument();
+    expect(screen.queryByText('Child1 Rao')).not.toBeInTheDocument();
+    const first = calls.find((c) => c.path.startsWith('/admissions?'));
+    expect(first?.path).toContain('state=admitted');
+    expect(first?.path).toContain('classId=c1');
+    expect(first?.path).toContain('yearId=y1');
+    expect(calls.some((c) => c.path.startsWith('/admissions?') && c.path.includes('state=ready'))).toBe(false);
+  });
+
+  it('ignores an unknown state in the address and shows the ready list', async () => {
+    mount('/admissions?state=nonsense', ALL, [adm(1), adm(2, { admitted: true })]);
+    expect(await screen.findByText('Child1 Rao')).toBeInTheDocument();
+  });
 });
 
 describe('admit sheet', () => {

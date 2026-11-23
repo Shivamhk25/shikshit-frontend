@@ -25,11 +25,15 @@ export interface AdmissionInsights {
   trendTo: string;
   enquiries: { total: number; byStatus: Record<EnquiryStatus, number>; bySource: Record<EnquirySource, number> };
   followUps: { due: number; dueToday: number; overdue: number };
-  registrations: { total: number; byStatus: Record<RegistrationStatus, number> };
+  /**
+   * `byStatus.accepted` means accepted ever, so it includes the admitted. `admitted` is the part that has been admitted
+   * (the same registrations as the admissions list with state=admitted).
+   */
+  registrations: { total: number; admitted: number; byStatus: Record<RegistrationStatus, number> };
   conversion: {
     enquiryToRegistration: Conversion;
     registrationToAccepted: Conversion;
-    /** Reserved for the admission step (ADM-05); always null until it exists. */
+    /** Admitted out of accepted (admitted ones included). The server always sends it; null only from an older server. */
     acceptedToAdmitted: Conversion | null;
   };
   trend: TrendPoint[];
@@ -113,15 +117,15 @@ export const sourceLabel = (v: string) => SOURCES.find((s) => s.value === v)?.la
 export const registrationStatusLabel = (v: string) => REGISTRATION_STATUSES.find((s) => s.value === v)?.label ?? v;
 
 /**
- * Link to the enquiries or registrations list for one figure. The lists read `status`, `classId`, `source`,
- * `followUpDue` (and `yearId` for registrations) from the address; the date range is not a list filter, so it is not
- * passed on.
+ * Link to the enquiries, registrations or admissions list for one figure. The lists read `status`, `classId`,
+ * `source`, `followUpDue` (and `yearId` for registrations and admissions, with `state` on admissions) from the
+ * address; the date range is not a list filter, so it is not passed on.
  */
-export function drillHref(list: 'enquiries' | 'registrations', f: InsightsFilters, extra: Record<string, string> = {}): string {
+export function drillHref(list: 'enquiries' | 'registrations' | 'admissions', f: InsightsFilters, extra: Record<string, string> = {}): string {
   const q = new URLSearchParams();
   Object.entries(extra).forEach(([k, v]) => v && q.set(k, v));
   if (f.classId) q.set('classId', f.classId);
-  if (list === 'registrations' && f.yearId) q.set('yearId', f.yearId);
+  if (list !== 'enquiries' && f.yearId) q.set('yearId', f.yearId);
   const s = q.toString();
   return `/${list}${s ? `?${s}` : ''}`;
 }
@@ -148,12 +152,20 @@ export function insightsCsv(d: AdmissionInsights, f: InsightsFilters, labels: { 
     ['Follow-ups', 'Overdue', d.followUps.overdue],
     ['Registrations', 'Total', d.registrations.total],
     ...REGISTRATION_STATUSES.map((s): (string | number)[] => ['Registrations by status', s.label, d.registrations.byStatus[s.value] ?? 0]),
+    ['Registrations', 'Admitted', d.registrations.admitted ?? 0],
     ['Conversion', 'Enquiries with a registration', d.conversion.enquiryToRegistration.converted],
     ['Conversion', 'Enquiries counted', d.conversion.enquiryToRegistration.of],
     ['Conversion', 'Enquiry to registration', d.conversion.enquiryToRegistration.rate === null ? null : formatRate(d.conversion.enquiryToRegistration.rate)],
     ['Conversion', 'Registrations accepted', d.conversion.registrationToAccepted.converted],
     ['Conversion', 'Registrations counted', d.conversion.registrationToAccepted.of],
     ['Conversion', 'Registration to accepted', d.conversion.registrationToAccepted.rate === null ? null : formatRate(d.conversion.registrationToAccepted.rate)],
+    ...(d.conversion.acceptedToAdmitted
+      ? [
+          ['Conversion', 'Registrations admitted', d.conversion.acceptedToAdmitted.converted],
+          ['Conversion', 'Accepted registrations counted for admission', d.conversion.acceptedToAdmitted.of],
+          ['Conversion', 'Accepted to admitted', d.conversion.acceptedToAdmitted.rate === null ? null : formatRate(d.conversion.acceptedToAdmitted.rate)],
+        ]
+      : []),
     ...d.trend.map((t): (string | number)[] => ['Monthly trend', `${monthLabel(t.month)}: enquiries`, t.enquiries]),
     ...d.trend.map((t): (string | number)[] => ['Monthly trend', `${monthLabel(t.month)}: registrations`, t.registrations]),
   ];
