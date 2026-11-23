@@ -17,6 +17,7 @@ import { RoomsPage } from '../features/aca/RoomsPage';
 import { ResourcePage } from '../features/aca/ResourcePage';
 import { discussionsDescriptor } from '../features/adm/discussions';
 import { enquiriesDescriptor } from '../features/adm/enquiries';
+import { enquiriesWithRegister, registrationsDescriptor } from '../features/adm/registrations';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
 import { chaptersDescriptor, classSectionsDescriptor, subjectClassesDescriptor, textbooksDescriptor } from '../features/aca/mappings';
 import { campusesDescriptor, divisionsDescriptor, electivesDescriptor, eventsDescriptor, holidaysDescriptor } from '../features/aca/masters';
@@ -54,7 +55,15 @@ function Gate() {
             path="enquiries"
             element={
               <RequirePermission path="/enquiries">
-                <ResourcePage descriptor={enquiriesDescriptor} />
+                <ResourcePage descriptor={enquiriesWithRegister(enquiriesDescriptor)} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="registrations"
+            element={
+              <RequirePermission path="/registrations">
+                <ResourcePage descriptor={registrationsDescriptor} />
               </RequirePermission>
             }
           />
