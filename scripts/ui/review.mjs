@@ -24,6 +24,7 @@ const nav = [
   { screenId: 'roles', label: 'Roles', order: 62 },
   { screenId: 'parent_links', label: 'Parent accounts', order: 63 },
   { screenId: 'appearance', label: 'Appearance', order: 64 },
+  { screenId: 'approvals', label: 'Approvals', order: 70 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
 const permissions = ['onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage'];
@@ -84,6 +85,31 @@ const notifications = [
   { id: 'n4', kind: 'user.locked', title: 'An account was locked', body: 'Priya Sharma was locked after five wrong passwords.', link: '/users', createdAt: ago(60 * 24 * 4), readAt: ago(60 * 24 * 3) },
 ];
 
+let approvalsEmpty = false;
+const approval = (id, o) => ({ id, typeKey: 'fee.concession', typeTitle: 'Fee concession', subjectId: 's1', summary: '', amount: null, requesterId: 'u9', requesterName: 'Ravi Nair', status: 'pending', currentStep: 2, stepCount: 3, stepName: 'Principal', createdAt: ago(60 * 50), decidedAt: null, ...o });
+const approvalInbox = [
+  approval('ap1', { summary: 'Sibling concession for Kabir Kumar, Class 5 A, term 2', amount: 12500 }),
+  approval('ap2', { typeKey: 'student.transfer', typeTitle: 'Transfer certificate', summary: 'Ishaan Verma, Class 8 B: family relocating to Pune', currentStep: 1, stepName: 'Registrar', requesterName: 'Neha Verma', createdAt: ago(60 * 5) }),
+  approval('ap3', { typeKey: 'fee.waiver', typeTitle: 'Late fee waiver', summary: 'Diya Singh, Class 3 A: bank holiday delayed the payment', amount: 600, currentStep: 1, stepCount: 2, stepName: 'Accountant', requesterName: 'Priya Sharma', createdAt: ago(25) }),
+];
+const approvalMine = [
+  approval('ap4', { summary: 'Hardship concession for Anaya Kumar', amount: 18000, currentStep: 1, stepName: 'Accountant', requesterName: 'Asha Verma' }),
+  approval('ap5', { typeTitle: 'Late fee waiver', summary: 'Meera Iyer, Class 5 B', amount: 450, status: 'approved', currentStep: 2, stepCount: 2, stepName: 'Principal', requesterName: 'Asha Verma', createdAt: ago(60 * 24 * 9), decidedAt: ago(60 * 24 * 7) }),
+  approval('ap6', { summary: 'Concession for Rahul Mehta', amount: 9000, status: 'rejected', currentStep: 1, stepName: 'Accountant', requesterName: 'Asha Verma', createdAt: ago(60 * 24 * 20), decidedAt: ago(60 * 24 * 18) }),
+];
+const approvalDetail = {
+  ...approvalInbox[0], canDecide: true, canCancel: false,
+  steps: [
+    { step: 1, name: 'Accountant', status: 'approved', decidedBy: 'Meera Iyer', decidedAt: ago(60 * 40) },
+    { step: 2, name: 'Principal', status: 'pending', decidedBy: null, decidedAt: null },
+    { step: 3, name: 'Chairperson', status: 'pending', decidedBy: null, decidedAt: null },
+  ],
+  events: [
+    { step: null, actorId: 'u9', actorName: 'Ravi Nair', action: 'submitted', comment: 'Single parent with two children in the school. Income certificate attached to the fee record.', createdAt: ago(60 * 50) },
+    { step: 1, actorId: 'u3', actorName: 'Meera Iyer', action: 'approved', comment: 'Documents checked and found in order.', createdAt: ago(60 * 40) },
+  ],
+};
+
 async function mockApi(page, signedIn, mfa) {
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname.replace('/api/v1', '');
@@ -98,9 +124,12 @@ async function mockApi(page, signedIn, mfa) {
     if (path === '/me/access' && route.request().headers()['authorization'] === 'Bearer visit1')
       return json(200, { user: { id: 'p1', name: 'Rohan Mehta', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'stu', 'iam'] }, visit: { by: 'Rohan Mehta', reason: 'Fees report shows the wrong total for class 5', expiresAt: new Date(Date.now() + 18e5).toISOString() }, permissions: permissions.filter((p) => p.endsWith('.view')), scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 0 });
     if (path === '/me/access')
-      return json(200, { user: { id: 'u1', name: 'Asha Verma', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'stu', 'iam'] }, permissions, scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 1 });
+      return json(200, { user: { id: 'u1', name: 'Asha Verma', tier: 'tenant' }, tenant: { id: 't1', name: 'Springfield Public School', brand: { primary: '#1F3A5F' }, modules: ['onb', 'aca', 'stu', 'iam', 'wfl'] }, permissions, scopes: {}, fieldMasks: {}, workspace: { home: 'admin', navigation: nav }, mobile: { tabs: [], features: [] }, approvals: { canApprove: [] }, version: 1 });
     if (path === '/me/notifications') return json(200, { items: notifications, page: { number: 1, size: 10, total: notifications.length }, unreadCount: 3 });
     if (path.startsWith('/me/notifications/')) return route.fulfill({ status: 204 });
+    if (path === '/approvals') return json(200, { items: approvalsEmpty ? [] : approvalInbox, page: { number: 1, size: 20, total: approvalsEmpty ? 0 : approvalInbox.length } });
+    if (path === '/approvals/mine') return json(200, { items: approvalsEmpty ? [] : approvalMine, page: { number: 1, size: 20, total: approvalsEmpty ? 0 : approvalMine.length } });
+    if (path.startsWith('/approvals/')) return json(200, approvalDetail);
     if (path === '/scope-assignments') return json(200, { items: [
       { id: 'a1', userId: 'u2', userName: 'Ravi Nair', scopeType: 'class_section', scopeRef: 'c1', label: 'Class 5 A (2026-27)', startsAt: '2026-06-01T00:00:00Z', endsAt: null, createdAt: '' },
       { id: 'a2', userId: 'u2', userName: 'Ravi Nair', scopeType: 'class_section', scopeRef: 'c2', label: 'Class 5 B (2026-27)', startsAt: '2026-06-01T00:00:00Z', endsAt: '2027-03-31T00:00:00Z', createdAt: '' },
@@ -163,6 +192,11 @@ const screens = [
   { name: 'console-accept-invite', path: '/console/accept-invite?token=abc', signedIn: false, ready: 'text=Set your password' },
   { name: 'student-edit-photo', path: '/students', signedIn: true, ready: 'text=Kabir Mehta', then: async (p) => { await p.getByRole('button', { name: /^Edit Kabir Mehta/ }).click(); await p.waitForSelector('text=Change photo'); } },
   { name: 'notifications-panel', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: async (p) => { await p.getByRole('button', { name: 'Notifications' }).click(); await p.waitForSelector('text=Student import finished'); } },
+  { name: 'approvals-inbox', path: '/approvals', signedIn: true, ready: 'text=Late fee waiver' },
+  { name: 'approvals-mine', path: '/approvals?tab=mine', signedIn: true, ready: 'text=Hardship concession for Anaya Kumar' },
+  { name: 'approval-detail', path: '/approvals?id=ap1', signedIn: true, ready: 'text=Your decision' },
+  { name: 'approval-reject-error', path: '/approvals?id=ap1', signedIn: true, ready: 'text=Your decision', then: (p) => p.getByRole('button', { name: 'Reject' }).click().then(() => p.waitForSelector('text=Say why you are rejecting')) },
+  { name: 'approvals-empty', path: '/approvals', signedIn: true, empty: true, ready: 'text=Nothing is waiting for you' },
   { name: 'palette', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: (p) => p.keyboard.press('Control+k').then(() => p.waitForSelector('role=dialog')) },
 ];
 const sizes = [
@@ -177,6 +211,7 @@ for (const s of screens) {
   for (const size of sizes) {
     const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 2 });
     const page = await ctx.newPage();
+    approvalsEmpty = Boolean(s.empty);
     await mockApi(page, s.signedIn, s.mfa);
     await page.goto(BASE + s.path);
     await page.waitForSelector(s.ready);

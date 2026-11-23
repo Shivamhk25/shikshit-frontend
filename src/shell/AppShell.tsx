@@ -60,6 +60,11 @@ function NavItems({ nodes, depth = 0 }: { nodes: NavNode[]; depth?: number }) {
   );
 }
 
+/** The server refuses approvals in a read-only support visit, so the menu does not offer them there. */
+function withoutVisitScreens(nodes: NavNode[], visit: boolean): NavNode[] {
+  return visit ? nodes.filter((n) => n.screenId !== 'approvals').map((n) => ({ ...n, children: withoutVisitScreens(n.children, visit) })) : nodes;
+}
+
 function Hint({ label, children }: { label: string; children: ReactElement }) {
   return (
     <Tooltip.Root>
@@ -169,7 +174,7 @@ export function AppShell() {
   useEffect(() => setMenuOpen(false), [location.pathname]);
 
   const nav = useMemo(
-    () => (access.phase === 'ready' ? buildNavigation(access.access, access.payload.workspace.navigation, registry, CLIENT) : []),
+    () => (access.phase === 'ready' ? withoutVisitScreens(buildNavigation(access.access, access.payload.workspace.navigation, registry, CLIENT), Boolean(access.payload.visit)) : []),
     [access],
   );
 
