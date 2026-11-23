@@ -73,9 +73,9 @@ export function createUsersApi(session: Pick<Session, 'fetch'>, base: string) {
   const doFetch: typeof fetch = (...a) => session.fetch(...a);
   return {
     list: (p: ListParams): Promise<PageResult<User>> => crud.list(p),
-    create: (input: UserInput) => send<User & { inviteLink: string }>(doFetch, `${base}/users`, 'POST', input),
+    create: (input: UserInput) => send<User & { inviteLink: string; emailQueued?: boolean }>(doFetch, `${base}/users`, 'POST', input),
     update: (id: string, input: UserInput) => send<User>(doFetch, `${base}/users/${id}`, 'PATCH', input),
-    act: (id: string, action: UserAction) => send<User & { resetLink?: string }>(doFetch, `${base}/users/${id}/${action}`, 'POST'),
+    act: (id: string, action: UserAction) => send<User & { resetLink?: string; emailQueued?: boolean }>(doFetch, `${base}/users/${id}/${action}`, 'POST'),
   };
 }
 export type UsersApi = ReturnType<typeof createUsersApi>;

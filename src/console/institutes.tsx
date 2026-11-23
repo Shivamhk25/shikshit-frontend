@@ -93,7 +93,7 @@ function useApi() {
       list: (q: URLSearchParams) => call<{ items: Institute[]; page: { total: number } }>('GET', `/platform/institutes?${q.toString()}`),
       get: (id: string) => call<Institute>('GET', `/platform/institutes/${id}`),
       plans: () => call<{ items: Plan[] }>('GET', '/platform/plans').then((r) => r.items),
-      create: (body: unknown) => call<Institute & { adminUsername: string; adminInviteLink: string }>('POST', '/platform/institutes', body),
+      create: (body: unknown) => call<Institute & { adminUsername: string; adminInviteLink: string; adminEmailQueued?: boolean }>('POST', '/platform/institutes', body),
       setStatus: (id: string, status: InstituteStatus) => call<Institute>('POST', `/platform/institutes/${id}/status`, { status }),
       setModules: (id: string, modules: string[]) => call<Institute>('PUT', `/platform/institutes/${id}/modules`, { modules }),
       startVisit: (id: string, reason: string) => call<{ visitId: string; code: string; instituteCode: string; expiresAt: string }>('POST', `/platform/institutes/${id}/visits`, { reason }),
@@ -260,7 +260,7 @@ export function NewInstitutePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [created, setCreated] = useState<(Institute & { adminUsername: string; adminInviteLink: string }) | null>(null);
+  const [created, setCreated] = useState<CreatedInstitute | null>(null);
 
   useEffect(() => {
     api.plans().then(
@@ -297,14 +297,14 @@ export function NewInstitutePage() {
     setSaving(true);
     setFormError('');
     try {
-      setCreated(
-        await api.create({
-          code: v.code,
-          name: v.name.trim(),
-          planCode: v.planCode,
-          admin: { username: v.username.trim(), displayName: v.displayName.trim(), email: v.email.trim() || null },
-        }),
-      );
+      const adminEmail = v.email.trim() || null;
+      const r = await api.create({
+        code: v.code,
+        name: v.name.trim(),
+        planCode: v.planCode,
+        admin: { username: v.username.trim(), displayName: v.displayName.trim(), email: adminEmail },
+      });
+      setCreated({ ...r, adminEmail });
     } catch (err) {
       if (err instanceof ApiError && Object.keys(err.fields).length) {
         setErrors(err.fields);
@@ -395,7 +395,10 @@ export function NewInstitutePage() {
   );
 }
 
-function CreatedPanel({ created, onDone }: { created: Institute & { adminUsername: string; adminInviteLink: string }; onDone: () => void }) {
+/** The wizard's result, plus the address typed for the Admin (to say where the invite was emailed). */
+type CreatedInstitute = Institute & { adminUsername: string; adminInviteLink: string; adminEmailQueued?: boolean; adminEmail: string | null };
+
+function CreatedPanel({ created, onDone }: { created: CreatedInstitute; onDone: () => void }) {
   const full = instituteUrl(created.code, created.adminInviteLink);
   const [copied, setCopied] = useState(false);
   const link = full ?? created.adminInviteLink;
@@ -405,7 +408,10 @@ function CreatedPanel({ created, onDone }: { created: Institute & { adminUsernam
       <Card className="space-y-4 p-6">
         <h2 className="font-display text-lg font-semibold text-fg">Invite for {created.adminUsername}</h2>
         <p className="text-sm text-fg-muted">
-          Send this link to the school&apos;s Admin. It works once and expires in 7 days. It is not shown again.
+          {created.adminEmailQueued && created.adminEmail
+            ? `We emailed this link to ${created.adminEmail}. You can also copy it here.`
+            : 'Send this link to the school’s Admin.'}{' '}
+          It works once and expires in 7 days. It is not shown again.
           {full ? null : ' Open it on the school’s own address.'}
         </p>
         <p className="break-all rounded-md border border-line-subtle bg-canvas p-3 font-mono text-xs text-fg" data-testid="admin-invite-link">

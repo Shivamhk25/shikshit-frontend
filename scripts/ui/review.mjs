@@ -115,7 +115,7 @@ async function mockApi(page, signedIn, mfa) {
     if (path === '/permissions/catalog') return json(200, { items: catalog });
     if (path === '/roles') return json(200, { items: roles });
     if (path === '/roles/r3') return json(200, frontOffice);
-    if (path === '/users' && route.request().method() === 'POST') return json(201, { ...users[1], id: 'u9', inviteLink: '/accept-invite?token=3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b' });
+    if (path === '/users' && route.request().method() === 'POST') return json(201, { ...users[1], id: 'u9', inviteLink: '/accept-invite?token=3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b3f9c2a7be1d04c5a8e6b9f0d2c4a7e1b', email: 'ravi.nair@school.test', emailQueued: true });
     if (path === '/users') return json(200, { items: users, page: { number: 1, size: 25, total: users.length } });
     if (path.endsWith('/photo') && path.startsWith('/students/')) return json(200, { url: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#c9b79c"/><circle cx="32" cy="26" r="12" fill="#8a7458"/><rect x="12" y="42" width="40" height="22" rx="11" fill="#8a7458"/></svg>'), expiresAt: '' });
     if (path === '/students') return json(200, { items: students, page: { number: 1, size: 25, total: students.length } });

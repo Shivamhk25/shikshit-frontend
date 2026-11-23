@@ -44,9 +44,9 @@ function fakeServer(permissions: string[], initial: User[]) {
       return json(200, { items, page: { number: 1, size: 25, total: items.length } });
     }
     if (path === '/users' && method === 'POST') {
-      const u = user('new1', { username: String(body?.username), displayName: String(body?.displayName), status: 'invited' });
+      const u = user('new1', { username: String(body?.username), displayName: String(body?.displayName), email: (body?.email as string | null) ?? null, status: 'invited' });
       users.push(u);
-      return json(201, { ...u, inviteLink: '/accept-invite?token=abc123' });
+      return json(201, { ...u, inviteLink: '/accept-invite?token=abc123', emailQueued: Boolean(body?.email) });
     }
     if (path === '/roles') return json(200, { items: [{ id: 'r-adm', code: 'admin', name: 'Admin', description: null, isSystem: true, holderCount: 1, permissionCount: 9, updatedAt: '' }, { id: 'r-clerk', code: 'clerk', name: 'Clerk', description: 'Front office', isSystem: false, holderCount: 0, permissionCount: 2, updatedAt: '' }] });
     if (/^\/users\/[^/]+\/roles$/.test(path) && method === 'GET') return json(200, { items: [] });
@@ -106,6 +106,19 @@ describe('users page', () => {
     await userEvent.click(screen.getByRole('button', { name: /Add and get invite link/ }));
     expect(await screen.findByTestId('one-time-link')).toHaveTextContent(`${window.location.origin}/accept-invite?token=abc123`);
     expect(server.calls.find((c) => c.method === 'POST' && c.path === '/users')?.body).toEqual({ username: 'teacher1', displayName: 'Asha Rao', email: null, phone: null });
+    expect(screen.getByText(/Send this link to/)).toBeInTheDocument();
+  });
+
+  it('says where the invite was emailed when the server queued it', async () => {
+    mount(ALL, []);
+    await userEvent.click(await screen.findByRole('button', { name: /Add user/ }));
+    await userEvent.type(screen.getByLabelText(/Username/), 'teacher2');
+    await userEvent.type(screen.getByLabelText(/Display name/), 'Ravi Kumar');
+    await userEvent.type(screen.getByLabelText(/^Email/), 'ravi@school.test');
+    await userEvent.click(screen.getByRole('button', { name: /Add and get invite link/ }));
+    expect(await screen.findByTestId('one-time-link')).toBeInTheDocument();
+    expect(screen.getByText(/We emailed this link to/)).toHaveTextContent('ravi@school.test');
+    expect(screen.queryByText(/Send this link to/)).not.toBeInTheDocument();
   });
 
   it('asks before disabling, then disables', async () => {

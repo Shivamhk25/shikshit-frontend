@@ -26,7 +26,7 @@ function mount(path = '/team') {
     if (p === '/platform/users' && method === 'POST') return json(201, { id: 'p3', email: body.email, name: body.name, status: 'invited', mfaEnabled: false, lastLoginAt: null, createdAt: '', link: '/accept-invite?token=abc' });
     if (p === '/platform/users') return json(200, { items: team });
     if (p === '/platform/users/p2/disable') return json(200, { ...team[1], status: 'disabled' });
-    if (p === '/platform/users/p2/reset-password') return json(200, { ...team[1], link: '/accept-invite?token=new' });
+    if (p === '/platform/users/p2/reset-password') return json(200, { ...team[1], link: '/accept-invite?token=new', emailQueued: true });
     if (p === '/platform/auth/invite/accept') return body.token === 'good' ? new Response(null, { status: 204 }) : json(400, { code: 'invalid_token', detail: 'This link is not valid any more. Ask a colleague for a new one.' });
     return json(404, {});
   }) as typeof fetch;
@@ -66,6 +66,7 @@ describe('console team', () => {
     expect(await screen.findByText('Disabled: Meera Iyer')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'New password link Meera Iyer' }));
     expect(await screen.findByTestId('platform-link')).toHaveTextContent('/accept-invite?token=new');
+    expect(screen.getByText(/We emailed this link to/)).toHaveTextContent(team[1].email);
   });
 
   it('sets a password from a link without being signed in', async () => {
