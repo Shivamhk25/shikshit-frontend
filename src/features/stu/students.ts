@@ -1,6 +1,7 @@
-import { createElement } from 'react';
+import { createElement, Fragment } from 'react';
 import type { ColumnDef, CrudDescriptor, FieldDef, FormValues } from '../../crud/descriptor';
 import { formatDate, orNull, text } from '../aca/structure';
+import { StudentDocuments } from './StudentDocuments';
 import { StudentPhoto } from './StudentPhoto';
 
 /** Descriptors for Students, Enrollments, Guardians, Student guardians and Student addresses. These are children's records: the server audits every read. */
@@ -67,7 +68,7 @@ export const studentsDescriptor: CrudDescriptor<Student> = {
   title: 'Students',
   endpoint: '/students',
   permissions: { view: 'stu.students.view', create: 'stu.students.create', edit: 'stu.students.edit', delete: 'stu.students.delete' },
-  editExtra: (row) => createElement(StudentPhoto, { studentId: row.id, name: row.fullName }),
+  editExtra: (row) => createElement(Fragment, null, createElement(StudentPhoto, { studentId: row.id, name: row.fullName }), createElement(StudentDocuments, { studentId: row.id })),
   defaultSort: 'fullName',
   searchPlaceholder: 'Search by name, code, mobile or APAAR ID',
   label: (r) => `${r.fullName} (${r.registrationCode})`,
