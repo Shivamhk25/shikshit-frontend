@@ -27,6 +27,7 @@ export const registry = defineRegistry([
   { screenId: 'enquiry_discussions', title: 'Enquiry discussions', permission: 'adm.enquiry_discussions.view', module: 'adm', parity: 'Both', web: { path: '/enquiry-discussions' }, mobile: { route: '/enquiry-discussions' } },
   { screenId: 'admission_insights', title: 'Admission insights', permission: 'adm.admission_insights.view', module: 'adm', parity: 'Both', web: { path: '/admission-insights' }, mobile: { route: '/admission-insights' } },
   { screenId: 'registrations', title: 'Registrations', permission: 'adm.student_registrations.view', module: 'adm', parity: 'Both', web: { path: '/registrations' }, mobile: { route: '/registrations' } },
+  { screenId: 'admissions', title: 'Admissions', permission: 'adm.admissions.view', module: 'adm', parity: 'Web-only', web: { path: '/admissions' } },
   { screenId: 'students', title: 'Students', permission: 'stu.students.view', module: 'stu', parity: 'Companion', web: { path: '/students' }, mobile: { route: '/students' } },
   { screenId: 'student_enrollments', title: 'Enrollments', permission: 'stu.students.view', module: 'stu', parity: 'Companion', web: { path: '/student-enrollments' }, mobile: { route: '/student-enrollments' } },
   { screenId: 'guardians', title: 'Guardians', permission: 'stu.students.view', module: 'stu', parity: 'Web-only', web: { path: '/guardians' } },

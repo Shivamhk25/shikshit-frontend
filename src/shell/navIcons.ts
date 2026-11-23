@@ -1,6 +1,8 @@
 import {
-  BarChart3, BookMarked, ClipboardCheck, FileUser, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList, Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, HeartHandshake, Home,
-  Layers, Link2, MessagesSquare, Palette, ListChecks, ListOrdered, MapPin, School, ShieldCheck, Sun, Upload, UserCheck, UserCog, UserRound, UserSearch, Users, type LucideIcon,
+  BarChart3, BookMarked, ClipboardCheck, FileUser, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList,
+  Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, HeartHandshake, Home, Layers, Link2, MessagesSquare,
+  Palette, ListChecks, ListOrdered, MapPin, School, ShieldCheck, Sun, Upload, UserCheck, UserCog, UserRound,
+  UserSearch, Users, UserRoundCheck, type LucideIcon,
 } from 'lucide-react';
 
 /** Icon for each screen id. A screen without one gets a neutral dot, so a new server screen never breaks the menu. */
@@ -26,6 +28,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   enquiry_discussions: MessagesSquare,
   registrations: FileUser,
   admission_insights: BarChart3,
+  admissions: UserRoundCheck,
   students: GraduationCap,
   student_enrollments: ClipboardList,
   guardians: Users,
@@ -64,6 +67,7 @@ export const NAV_BLURBS: Record<string, string> = {
   enquiry_discussions: 'Every call, visit and message with a family, newest first.',
   registrations: 'Applications for a place, from the first form to the decision.',
   admission_insights: 'Enquiries, registrations and how many families move on.',
+  admissions: 'Accepted registrations waiting to become students.',
   students: 'Every learner, with their class this year.',
   student_enrollments: 'Where each student sits, year by year.',
   guardians: 'Parents and guardians, shared between siblings.',

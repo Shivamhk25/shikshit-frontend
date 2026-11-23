@@ -21,6 +21,7 @@ const nav = [
   { screenId: 'enquiry_discussions', label: 'Enquiry discussions', order: 36 },
   { screenId: 'registrations', label: 'Registrations', order: 37 },
   { screenId: 'admission_insights', label: 'Admission insights', order: 39 },
+  { screenId: 'admissions', label: 'Admissions', order: 38 },
   { screenId: 'students', label: 'Students', order: 40 },
   { screenId: 'guardians', label: 'Guardians', order: 42 },
   { screenId: 'scope_assignments', label: 'Class assignments', order: 60 },
@@ -31,7 +32,9 @@ const nav = [
   { screenId: 'approvals', label: 'Approvals', order: 70 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
-const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete'];
+const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create'];
+const admission = (n, o) => ({ id: `r${n}`, applicationNumber: `REG-0000${n}`, appliedOn: '2026-11-12', fullName: 'Diya Singh', dateOfBirth: '2021-03-14', gender: 'female', fatherName: 'Rahul Singh', motherName: null, guardianName: null, guardianPhone: '9810012345', classId: 'c1', className: 'Nursery', sectionId: null, sectionName: null, yearId: 'y1', yearName: '2027-28', status: 'accepted', admitted: false, admittedAt: null, studentId: null, studentCode: null, enrolledSectionName: null, rollNumber: null, ...o });
+const admissions = [admission(43, {}), admission(46, { fullName: 'Kabir Iyer', gender: null, className: 'Class 1', classId: 'c2' }), admission(47, { fullName: 'Aarav Sharma', sectionName: 'A' })];
 const students = [
   { id: '1', registrationCode: 'R-0001', firstName: 'Asha', fullName: 'Asha Rao', gender: 'female', dateOfBirth: '2015-06-01', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '1' },
   { id: '2', registrationCode: 'R-0002', firstName: 'Kabir', fullName: 'Kabir Mehta', gender: 'male', dateOfBirth: '2015-02-11', status: 'active', currentClassName: 'Class 5', currentSectionName: 'A', currentRollNumber: '2' },
@@ -217,6 +220,9 @@ async function mockApi(page, signedIn, mfa) {
     }
     if (path === '/admission-insights') return insightsMode === 'error' ? json(500, { code: 'internal', detail: 'The figures could not be loaded. Please try again.' }) : json(200, insightsMode === 'empty' ? emptyInsights : insights);
     if (path === '/enquiries') return json(200, { items: enquiries, page: { number: 1, size: 25, total: enquiries.length } });
+    if (path === '/admissions') return json(200, { items: admissions, page: { number: 1, size: 25, total: admissions.length } });
+    if (path.startsWith('/admissions/') && path.endsWith('/admit')) return json(201, { registrationId: 'r43', applicationNumber: 'REG-00043', alreadyAdmitted: false, student: { id: 's9', registrationCode: 'STU-000045', fullName: 'Diya Singh', className: 'Nursery', sectionName: 'A', rollNumber: '1' }, enrollmentId: 'e1', yearName: '2027-28', guardians: [], notes: [] });
+    if (path === '/class-section-mappings') return json(200, { items: [{ id: 'm1', classId: 'c1', yearId: 'y1', sectionId: 's1', sectionName: 'A' }, { id: 'm2', classId: 'c1', yearId: 'y1', sectionId: 's2', sectionName: 'B' }, { id: 'm3', classId: 'c2', yearId: 'y1', sectionId: 's1', sectionName: 'A' }], page: { number: 1, size: 200, total: 3 } });
     if (path === '/student-registrations') return json(200, { items: registrations, page: { number: 1, size: 25, total: registrations.length } });
     if (path === '/classes') return json(200, { items: [{ id: 'c1', name: 'Nursery' }, { id: 'c2', name: 'Class 1' }], page: { number: 1, size: 200, total: 2 } });
     if (path === '/students') return json(200, { items: students, page: { number: 1, size: 25, total: students.length } });
@@ -241,6 +247,8 @@ const screens = [
   { name: 'admission-insights-empty', path: '/admission-insights', signedIn: true, insights: 'empty', ready: 'text=No enquiries or registrations here yet' },
   { name: 'admission-insights-error', path: '/admission-insights', signedIn: true, insights: 'error', ready: 'text=could not be loaded' },
   { name: 'registrations', path: '/registrations', signedIn: true, ready: 'text=Ishaan Verma' },
+  { name: 'admissions', path: '/admissions', signedIn: true, ready: 'text=Diya Singh' },
+  { name: 'admissions-admit', path: '/admissions', signedIn: true, ready: 'text=Diya Singh', then: (p) => p.getByRole('button', { name: /^Admit REG-000043/ }).click().then(() => p.waitForSelector('role=dialog')) },
   { name: 'registrations-add', path: '/registrations', signedIn: true, ready: 'text=Ishaan Verma', then: (p) => p.getByRole('button', { name: 'Add registration' }).click().then(() => p.waitForSelector('role=dialog')) },
   { name: 'enquiries-register', path: '/enquiries', signedIn: true, ready: 'text=Ishaan Verma', then: (p) => p.getByRole('button', { name: /^Register ENQ-102/ }).click().then(() => p.waitForSelector('role=alertdialog')) },
   { name: 'users', path: '/users', signedIn: true, ready: 'text=Ravi Nair' },
