@@ -1,5 +1,6 @@
 import { createElement } from 'react';
 import type { CrudDescriptor, FormValues } from '../../crud/descriptor';
+import { admitHref } from './admissions';
 import { formatDate, STATUSES as ENQUIRY_STATUSES, type Enquiry } from './enquiries';
 
 export type RegistrationStatus = 'submitted' | 'under_review' | 'accepted' | 'rejected' | 'withdrawn';
@@ -71,6 +72,15 @@ export const registrationsDescriptor: CrudDescriptor<Registration> = {
     { key: 'status', label: 'Status', kind: 'select', options: REGISTRATION_STATUSES },
     { key: 'classId', label: 'Class', kind: 'select', remote: { endpoint: '/classes', value: 'id', label: 'name' } },
     { key: 'yearId', label: 'Academic year', kind: 'select', remote: { endpoint: '/academic-years', value: 'id', label: 'name' } },
+  ],
+  rowLinks: [
+    {
+      key: 'admit',
+      label: 'Admit',
+      permission: 'adm.admissions.create',
+      visible: (r) => r.status === 'accepted',
+      href: (r) => admitHref(r.id),
+    },
   ],
   columns: [
     { key: 'applicationNumber', label: 'App. no.', sort: 'applicationNumber' },
