@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { AlarmClock, ArrowUpRight, BarChart3, Download, Hourglass, Printer, RefreshCw } from 'lucide-react';
+import { AlarmClock, ArrowUpRight, BarChart3, Download, Printer, RefreshCw } from 'lucide-react';
 import { Button, Card, PageHeader, cx } from '../../design-system';
 import { createCrudClient } from '../../crud/client';
 import { useAccessState } from '../../shell/AccessProvider';
@@ -96,26 +96,24 @@ function FunnelBar({ label, value, max, tone, to, drillLabel }: { label: string;
   );
 }
 
-function Funnel({ d, links }: { d: AdmissionInsights; links: { enquiries: string | null; registrations: string | null; accepted: string | null } }) {
+function Funnel({ d, links }: { d: AdmissionInsights; links: { enquiries: string | null; registrations: string | null; accepted: string | null; admitted: string | null } }) {
   const accepted = d.registrations.byStatus.accepted;
-  const max = Math.max(d.enquiries.total, d.registrations.total, accepted);
+  const admitted = d.registrations.admitted;
+  const max = Math.max(d.enquiries.total, d.registrations.total, accepted, admitted);
   return (
     <Card className="space-y-4 p-6" aria-labelledby="funnel-title" role="region">
       <div>
         <h2 id="funnel-title" className="font-display text-lg font-semibold text-fg">From enquiry to a place</h2>
-        <p className="text-sm text-fg-muted">How many families move on at each step.</p>
+        <p className="text-sm text-fg-muted">How many families move on at each step. Accepted includes the families already admitted.</p>
       </div>
       <FunnelBar label="Enquiries" value={d.enquiries.total} max={max} tone="bg-brand-ink" to={links.enquiries} drillLabel="Open all enquiries" />
       <StepNote c={d.conversion.enquiryToRegistration} noun="enquiries have a registration" />
       <FunnelBar label="Registrations" value={d.registrations.total} max={max} tone="bg-info" to={links.registrations} drillLabel="Open all registrations" />
       <StepNote c={d.conversion.registrationToAccepted} noun="registrations accepted" />
       <FunnelBar label="Accepted" value={accepted} max={max} tone="bg-success" to={links.accepted} drillLabel="Open accepted registrations" />
-      <div className="flex items-start gap-3 rounded-md border border-dashed border-line px-4 py-3" data-testid="funnel-admitted">
-        <Hourglass aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-fg-subtle" />
-        <p className="text-sm text-fg-muted">
-          <span className="font-medium text-fg">Admitted</span>
-          <span className="ml-2">Comes with the admission step. Nothing is counted here yet.</span>
-        </p>
+      {d.conversion.acceptedToAdmitted ? <StepNote c={d.conversion.acceptedToAdmitted} noun="accepted registrations admitted" /> : null}
+      <div data-testid="funnel-admitted">
+        <FunnelBar label="Admitted" value={admitted} max={max} tone="bg-brand-gold" to={links.admitted} drillLabel="Open admitted students" />
       </div>
     </Card>
   );
@@ -311,8 +309,10 @@ export function InsightsPage({ api: given }: { api?: InsightsApi }) {
   const can = (p: string) => access.phase === 'ready' && access.access.can(p);
   const canEnquiries = can('adm.enquiry.view');
   const canRegistrations = can('adm.student_registrations.view');
+  const canAdmissions = can('adm.admissions.view');
   const enq = (extra: Record<string, string> = {}) => (canEnquiries ? drillHref('enquiries', filters, extra) : null);
   const reg = (extra: Record<string, string> = {}) => (canRegistrations ? drillHref('registrations', filters, extra) : null);
+  const adm = canAdmissions ? drillHref('admissions', filters, { state: 'admitted' }) : null;
 
   const fetchData = useCallback(async () => {
     if (rangeProblem(filters)) return;
@@ -376,17 +376,18 @@ export function InsightsPage({ api: given }: { api?: InsightsApi }) {
           <p className="text-sm text-fg-muted">
             Figures as of {formatDate(data.asOf)}.{dated ? ' The lists you open from here show every date, so their totals can be larger.' : ''}
           </p>
-          <ul aria-label="Key figures" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <ul aria-label="Key figures" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <Kpi label="Enquiries" value={formatCount(data.enquiries.total)} to={enq()} drillLabel="Enquiries, open the list" />
             <Kpi label="Registrations" value={formatCount(data.registrations.total)} to={reg()} drillLabel="Registrations, open the list" />
             <Kpi label="Accepted" value={formatCount(data.registrations.byStatus.accepted)} hint={`${formatRate(data.conversion.registrationToAccepted.rate)} of registrations`} to={reg({ status: 'accepted' })} drillLabel="Accepted, open the list" />
+            <Kpi label="Admitted" value={formatCount(data.registrations.admitted)} hint={data.conversion.acceptedToAdmitted ? `${formatRate(data.conversion.acceptedToAdmitted.rate)} of accepted` : undefined} to={adm} drillLabel="Admitted, open the list" />
             <Kpi label="Enquiries that registered" value={formatRate(data.conversion.enquiryToRegistration.rate)} hint={data.conversion.enquiryToRegistration.rate === null ? 'No enquiries to measure yet' : `${formatCount(data.conversion.enquiryToRegistration.converted)} of ${formatCount(data.conversion.enquiryToRegistration.of)} enquiries`} />
           </ul>
 
           <FollowUps d={data.followUps} to={enq({ followUpDue: 'true' })} />
 
           <div className="grid gap-6 lg:grid-cols-2 print:break-inside-avoid">
-            <Funnel d={data} links={{ enquiries: enq(), registrations: reg(), accepted: reg({ status: 'accepted' }) }} />
+            <Funnel d={data} links={{ enquiries: enq(), registrations: reg(), accepted: reg({ status: 'accepted' }), admitted: adm }} />
             <Card className="space-y-3 p-6" role="region" aria-labelledby="source-title">
               <div>
                 <h2 id="source-title" className="font-display text-lg font-semibold text-fg">Where enquiries come from</h2>

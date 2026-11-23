@@ -47,9 +47,10 @@ export function AdmissionsPage() {
   const [params, setParams] = useSearchParams();
   const wanted = params.get('registration');
 
-  const [stateTab, setStateTab] = useState<AdmissionState>('ready');
-  const [classId, setClassId] = useState('');
-  const [yearId, setYearId] = useState('');
+  // The insights dashboard links here with ?state=admitted&classId=…&yearId=…; anything else starts at the default view.
+  const [stateTab, setStateTab] = useState<AdmissionState>(params.get('state') === 'admitted' ? 'admitted' : 'ready');
+  const [classId, setClassId] = useState(params.get('classId') ?? '');
+  const [yearId, setYearId] = useState(params.get('yearId') ?? '');
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
