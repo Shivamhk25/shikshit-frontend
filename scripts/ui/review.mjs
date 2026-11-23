@@ -86,16 +86,28 @@ const notifications = [
 ];
 
 let approvalsEmpty = false;
+let handoverDenied = false;
 const approval = (id, o) => ({ id, typeKey: 'fee.concession', typeTitle: 'Fee concession', subjectId: 's1', summary: '', amount: null, requesterId: 'u9', requesterName: 'Ravi Nair', status: 'pending', currentStep: 2, stepCount: 3, stepName: 'Principal', createdAt: ago(60 * 50), decidedAt: null, ...o });
 const approvalInbox = [
   approval('ap1', { summary: 'Sibling concession for Kabir Kumar, Class 5 A, term 2', amount: 12500 }),
   approval('ap2', { typeKey: 'student.transfer', typeTitle: 'Transfer certificate', summary: 'Ishaan Verma, Class 8 B: family relocating to Pune', currentStep: 1, stepName: 'Registrar', requesterName: 'Neha Verma', createdAt: ago(60 * 5) }),
+  approval('ap7', { typeTitle: 'Fee concession', summary: 'Sibling concession for Aarav Joshi, Class 2 B', amount: 8000, currentStep: 2, stepName: 'Principal', requesterName: 'Neha Verma', createdAt: ago(60 * 3), delegatedFromId: 'u8', delegatedFromName: 'Dr. Sunita Iyer' }),
   approval('ap3', { typeKey: 'fee.waiver', typeTitle: 'Late fee waiver', summary: 'Diya Singh, Class 3 A: bank holiday delayed the payment', amount: 600, currentStep: 1, stepCount: 2, stepName: 'Accountant', requesterName: 'Priya Sharma', createdAt: ago(25) }),
 ];
 const approvalMine = [
   approval('ap4', { summary: 'Hardship concession for Anaya Kumar', amount: 18000, currentStep: 1, stepName: 'Accountant', requesterName: 'Asha Verma' }),
   approval('ap5', { typeTitle: 'Late fee waiver', summary: 'Meera Iyer, Class 5 B', amount: 450, status: 'approved', currentStep: 2, stepCount: 2, stepName: 'Principal', requesterName: 'Asha Verma', createdAt: ago(60 * 24 * 9), decidedAt: ago(60 * 24 * 7) }),
   approval('ap6', { summary: 'Concession for Rahul Mehta', amount: 9000, status: 'rejected', currentStep: 1, stepName: 'Accountant', requesterName: 'Asha Verma', createdAt: ago(60 * 24 * 20), decidedAt: ago(60 * 24 * 18) }),
+];
+const ahead = (ms) => new Date(Date.now() + ms).toISOString();
+const handoverBase = { delegatorId: 'u1', delegatorName: 'Asha Verma', delegateId: 'u5', delegateName: 'Kavita Rao', typeKeys: null, endedAt: null, createdAt: ago(60 * 24 * 2), reason: '' };
+const handoversGiven = [
+  { ...handoverBase, id: 'd1', startsAt: ago(60 * 24 * 2), endsAt: ahead(5 * 864e5), reason: 'Away at a conference in Hyderabad', status: 'active' },
+  { ...handoverBase, id: 'd2', delegateName: 'Meena Das', startsAt: ago(60 * 24 * 40), endsAt: ago(60 * 24 * 30), typeKeys: ['fee.concession', 'fee.waiver'], status: 'expired', reason: 'Medical leave' },
+  { ...handoverBase, id: 'd3', delegateName: 'Sunil Bose', startsAt: ago(60 * 24 * 20), endsAt: ago(60 * 24 * 10), endedAt: ago(60 * 24 * 18), status: 'ended' },
+];
+const handoversReceived = [
+  { ...handoverBase, id: 'r1', delegatorId: 'u8', delegatorName: 'Dr. Sunita Iyer', delegateId: 'u1', delegateName: 'Asha Verma', startsAt: ago(60 * 24), endsAt: ahead(6 * 864e5), reason: 'Leave until the 30th', status: 'active' },
 ];
 const approvalDetail = {
   ...approvalInbox[0], canDecide: true, canCancel: false,
@@ -107,6 +119,7 @@ const approvalDetail = {
   events: [
     { step: null, actorId: 'u9', actorName: 'Ravi Nair', action: 'submitted', comment: 'Single parent with two children in the school. Income certificate attached to the fee record.', createdAt: ago(60 * 50) },
     { step: 1, actorId: 'u3', actorName: 'Meera Iyer', action: 'approved', comment: 'Documents checked and found in order.', createdAt: ago(60 * 40) },
+    { step: 1, actorId: 'u5', actorName: 'Kavita Rao', action: 'approved', comment: 'Second check done while Dr. Iyer is away.', createdAt: ago(60 * 30), onBehalfOfId: 'u8', onBehalfOfName: 'Dr. Sunita Iyer' },
   ],
 };
 
@@ -129,6 +142,8 @@ async function mockApi(page, signedIn, mfa) {
     if (path.startsWith('/me/notifications/')) return route.fulfill({ status: 204 });
     if (path === '/approvals') return json(200, { items: approvalsEmpty ? [] : approvalInbox, page: { number: 1, size: 20, total: approvalsEmpty ? 0 : approvalInbox.length } });
     if (path === '/approvals/mine') return json(200, { items: approvalsEmpty ? [] : approvalMine, page: { number: 1, size: 20, total: approvalsEmpty ? 0 : approvalMine.length } });
+    if (path === '/approvals/delegations' && route.request().method() === 'POST') return handoverDenied ? json(403, { code: 'forbidden', detail: 'Not allowed.' }) : json(201, handoversGiven[0]);
+    if (path === '/approvals/delegations') return json(200, { given: approvalsEmpty ? [] : handoversGiven, received: approvalsEmpty ? [] : handoversReceived });
     if (path.startsWith('/approvals/')) return json(200, approvalDetail);
     if (path === '/scope-assignments') return json(200, { items: [
       { id: 'a1', userId: 'u2', userName: 'Ravi Nair', scopeType: 'class_section', scopeRef: 'c1', label: 'Class 5 A (2026-27)', startsAt: '2026-06-01T00:00:00Z', endsAt: null, createdAt: '' },
@@ -196,6 +211,12 @@ const screens = [
   { name: 'approvals-mine', path: '/approvals?tab=mine', signedIn: true, ready: 'text=Hardship concession for Anaya Kumar' },
   { name: 'approval-detail', path: '/approvals?id=ap1', signedIn: true, ready: 'text=Your decision' },
   { name: 'approval-reject-error', path: '/approvals?id=ap1', signedIn: true, ready: 'text=Your decision', then: (p) => p.getByRole('button', { name: 'Reject' }).click().then(() => p.waitForSelector('text=Say why you are rejecting')) },
+  { name: 'handovers', path: '/approvals?tab=handovers', signedIn: true, ready: 'text=Away at a conference in Hyderabad' },
+  { name: 'handovers-empty', path: '/approvals?tab=handovers', signedIn: true, empty: true, ready: 'text=You have not handed your approvals to anyone' },
+  { name: 'handover-new', path: '/approvals?tab=handovers', signedIn: true, ready: 'text=Away at a conference in Hyderabad', then: async (p) => { await p.getByRole('button', { name: /Hand over my approvals/ }).click(); await p.getByLabel(/^Colleague \*$/).fill('Pri'); await p.waitForSelector('option:has-text("Priya Sharma")', { state: 'attached' }); await p.getByLabel('Colleague results').selectOption({ label: 'Priya Sharma' }); await p.getByLabel(/^Ends/).fill(new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 16)); await p.getByLabel(/Reason/).fill('Away at a conference'); } },
+  { name: 'handover-too-long', path: '/approvals?tab=handovers', signedIn: true, ready: 'text=Away at a conference in Hyderabad', then: async (p) => { await p.getByRole('button', { name: /Hand over my approvals/ }).click(); await p.getByLabel(/^Ends/).fill(new Date(Date.now() + 120 * 864e5).toISOString().slice(0, 16)); await p.getByRole('button', { name: 'Hand over', exact: true }).click(); await p.waitForSelector('text=Choose the colleague'); } },
+  { name: 'handover-no-rights', path: '/approvals?tab=handovers', signedIn: true, denied: true, ready: 'text=Away at a conference in Hyderabad', then: async (p) => { await p.getByRole('button', { name: /Hand over my approvals/ }).click(); await p.getByLabel(/^Colleague \*$/).fill('Ravi'); await p.waitForSelector('option:has-text("Ravi Nair")', { state: 'attached' }); await p.getByLabel('Colleague results').selectOption({ index: 1 }); await p.getByLabel(/^Ends/).fill(new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 16)); await p.getByRole('button', { name: 'Hand over', exact: true }).click(); await p.waitForSelector('text=only when you can decide some yourself'); } },
+  { name: 'handover-end-confirm', path: '/approvals?tab=handovers', signedIn: true, ready: 'text=Away at a conference in Hyderabad', then: async (p) => { await p.getByRole('button', { name: /End handover to Kavita Rao now/ }).click(); await p.waitForSelector('role=alertdialog'); } },
   { name: 'approvals-empty', path: '/approvals', signedIn: true, empty: true, ready: 'text=Nothing is waiting for you' },
   { name: 'palette', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: (p) => p.keyboard.press('Control+k').then(() => p.waitForSelector('role=dialog')) },
 ];
@@ -212,6 +233,7 @@ for (const s of screens) {
     const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 2 });
     const page = await ctx.newPage();
     approvalsEmpty = Boolean(s.empty);
+    handoverDenied = Boolean(s.denied);
     await mockApi(page, s.signedIn, s.mfa);
     await page.goto(BASE + s.path);
     await page.waitForSelector(s.ready);

@@ -20,6 +20,9 @@ export interface Approval {
   stepName: string;
   createdAt: string;
   decidedAt: string | null;
+  /** Set when I may decide this only because this person handed their approvals to me. */
+  delegatedFromId?: string | null;
+  delegatedFromName?: string | null;
 }
 
 export interface ApprovalStep {
@@ -37,6 +40,41 @@ export interface ApprovalEvent {
   action: 'submitted' | 'approved' | 'rejected' | 'cancelled';
   comment: string;
   createdAt: string;
+  /** Set when the actor decided through a handover, on behalf of this person. */
+  onBehalfOfId?: string | null;
+  onBehalfOfName?: string | null;
+}
+
+export type DelegationStatus = 'scheduled' | 'active' | 'ended' | 'expired';
+
+export interface Delegation {
+  id: string;
+  delegatorId: string;
+  delegatorName: string;
+  delegateId: string;
+  delegateName: string;
+  startsAt: string;
+  endsAt: string;
+  reason: string;
+  /** Null means every workflow type. */
+  typeKeys: string[] | null;
+  endedAt: string | null;
+  createdAt: string;
+  status: DelegationStatus;
+}
+
+export interface DelegationInput {
+  delegateId: string;
+  /** Left out to start now. */
+  startsAt?: string;
+  endsAt: string;
+  reason?: string;
+  typeKeys?: string[];
+}
+
+export interface DelegationList {
+  given: Delegation[];
+  received: Delegation[];
 }
 
 export interface ApprovalDetail extends Approval {
@@ -52,13 +90,15 @@ export interface ApprovalPage {
 }
 
 async function failure(res: Response): Promise<ApiError> {
-  let p: { code?: string; detail?: string } = {};
+  let p: { code?: string; detail?: string; errors?: { field: string; message: string }[] } = {};
   try {
     p = (await res.json()) as typeof p;
   } catch {
     /* not JSON */
   }
-  return new ApiError(res.status, p.code ?? 'error', {}, p.detail ?? 'Something went wrong. Please try again.');
+  const fields: Record<string, string> = {};
+  for (const e of p.errors ?? []) fields[e.field] ??= e.message;
+  return new ApiError(res.status, p.code ?? 'error', fields, p.detail ?? 'Something went wrong. Please try again.');
 }
 
 async function send<T>(session: Pick<Session, 'fetch'>, url: string, method: 'GET' | 'POST', body?: unknown): Promise<T> {
@@ -72,7 +112,7 @@ async function send<T>(session: Pick<Session, 'fetch'>, url: string, method: 'GE
   return (await res.json()) as T;
 }
 
-/** The client for the approvals endpoints. Delegation (a later section) adds its own calls beside these. */
+/** The client for the approvals endpoints, including handovers (delegations). */
 export function createApprovalsApi(session: Pick<Session, 'fetch'>, base: string) {
   const one = (id: string) => `${base}/approvals/${encodeURIComponent(id)}`;
   return {
@@ -88,6 +128,10 @@ export function createApprovalsApi(session: Pick<Session, 'fetch'>, base: string
     approve: (id: string, d: { comment?: string; step?: number }): Promise<ApprovalDetail> => send(session, `${one(id)}/approve`, 'POST', d),
     reject: (id: string, d: { comment: string; step?: number }): Promise<ApprovalDetail> => send(session, `${one(id)}/reject`, 'POST', d),
     cancel: (id: string, d: { comment?: string } = {}): Promise<ApprovalDetail> => send(session, `${one(id)}/cancel`, 'POST', d),
+    delegations: (): Promise<DelegationList> => send(session, `${base}/approvals/delegations`, 'GET'),
+    /** 400 carries field errors; 403 means the caller has no approvals to hand over. */
+    delegate: (d: DelegationInput): Promise<Delegation> => send(session, `${base}/approvals/delegations`, 'POST', d),
+    endDelegation: (id: string): Promise<Delegation> => send(session, `${base}/approvals/delegations/${encodeURIComponent(id)}/end`, 'POST'),
   };
 }
 export type ApprovalsApi = ReturnType<typeof createApprovalsApi>;
