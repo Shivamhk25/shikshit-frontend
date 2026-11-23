@@ -177,7 +177,7 @@ describe('Promotions wizard', () => {
       if (method === 'POST' && p === '/promotions/b1/preview') {
         previews += 1;
         return previews === 1
-          ? { status: 200, body: outcome([outRow(), outRow({ studentId: 's2', studentName: 'Bina Rao', outcome: 'problem', rollNumber: null, problems: [{ field: 'rollNumber', code: 'roll_taken', message: 'Roll number 3 is already used in Class 6 section Section A.' }] }), outRow({ studentId: 's3', studentName: 'Chitra Rao', decision: 'leave_out', outcome: 'leave_out', toClassId: null, toClassName: null, toSectionId: null, toSectionName: null, rollNumber: null })], { warnings: ['Class 6 section Section A would have 31 students; its capacity is 30.'] }) }
+          ? { status: 200, body: outcome([outRow(), outRow({ studentId: 's2', studentName: 'Bina Rao', outcome: 'problem', rollNumber: null, problems: [{ field: 'rollNumber', code: 'roll_taken', message: 'Roll number 3 is already used in Class 6 (Section A).' }] }), outRow({ studentId: 's3', studentName: 'Chitra Rao', decision: 'leave_out', outcome: 'leave_out', toClassId: null, toClassName: null, toSectionId: null, toSectionName: null, rollNumber: null })], { warnings: ['Class 6 (Section A) would have 31 students; its capacity is 30.'] }) }
           : { status: 200, body: outcome([outRow(), outRow({ studentId: 's2', studentName: 'Bina Rao', rollNumber: '2' }), outRow({ studentId: 's3', studentName: 'Chitra Rao', decision: 'leave_out', outcome: 'leave_out', toClassId: null, rollNumber: null })]) };
       }
       if (method === 'POST' && p === '/promotions/b1/commit') {
@@ -227,7 +227,7 @@ describe('Promotions wizard', () => {
     expect(screen.getByRole('button', { name: /Enrol…/ })).toBeDisabled(); // not before a preview
     await user.type(screen.getByRole('textbox', { name: 'Roll number for Bina Rao' }), '3');
     await user.click(screen.getByRole('button', { name: 'Preview' }));
-    expect(await screen.findByText('Roll number 3 is already used in Class 6 section Section A.')).toBeInTheDocument();
+    expect(await screen.findByText('Roll number 3 is already used in Class 6 (Section A).')).toBeInTheDocument();
     expect(screen.getByTestId('preview-summary')).toHaveTextContent('1 student needs attention');
     expect(screen.getByText(/capacity is 30/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Enrol…/ })).toBeDisabled();
