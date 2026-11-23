@@ -24,6 +24,7 @@ const nav = [
   { screenId: 'admissions', label: 'Admissions', order: 38 },
   { screenId: 'students', label: 'Students', order: 40 },
   { screenId: 'guardians', label: 'Guardians', order: 42 },
+  { screenId: 'transfers', label: 'Transfers', order: 45 },
   { screenId: 'scope_assignments', label: 'Class assignments', order: 60 },
   { screenId: 'users', label: 'Users', order: 61 },
   { screenId: 'roles', label: 'Roles', order: 62 },
@@ -32,7 +33,7 @@ const nav = [
   { screenId: 'approvals', label: 'Approvals', order: 70 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
-const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create'];
+const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create', 'stu.student_transfers.view', 'stu.student_transfers.create', 'stu.student_transfers.edit', 'stu.student_transfers.delete'];
 const admission = (n, o) => ({ id: `r${n}`, applicationNumber: `REG-0000${n}`, appliedOn: '2026-11-12', fullName: 'Diya Singh', dateOfBirth: '2021-03-14', gender: 'female', fatherName: 'Rahul Singh', motherName: null, guardianName: null, guardianPhone: '9810012345', classId: 'c1', className: 'Nursery', sectionId: null, sectionName: null, yearId: 'y1', yearName: '2027-28', status: 'accepted', admitted: false, admittedAt: null, studentId: null, studentCode: null, enrolledSectionName: null, rollNumber: null, ...o });
 const admissions = [admission(43, {}), admission(46, { fullName: 'Kabir Iyer', gender: null, className: 'Class 1', classId: 'c2' }), admission(47, { fullName: 'Aarav Sharma', sectionName: 'A' })];
 const students = [
@@ -124,6 +125,17 @@ const notifications = [
   { id: 'n3', kind: 'import.finished', title: 'Student import finished', body: '118 students were added and 2 rows need a look. Download the list of rows that were skipped.', link: null, createdAt: ago(60 * 26), readAt: null },
   { id: 'n4', kind: 'user.locked', title: 'An account was locked', body: 'Priya Sharma was locked after five wrong passwords.', link: '/users', createdAt: ago(60 * 24 * 4), readAt: ago(60 * 24 * 3) },
 ];
+
+const transfer = (n, status, o) => ({ id: `t${n}`, student: { id: `s${n}`, name: 'Asha Rao', registrationCode: `R-000${n}` }, className: 'Class 5', sectionName: 'A', yearName: '2026-27', requestedOn: '2026-11-10', reason: 'relocation', reasonNote: null, destinationSchool: 'Pune Public School', lastAttendanceDate: '2026-11-08', status, approvalRequestId: status === 'requested' ? 'ap1' : null, tcNumber: null, tcIssuedOn: null, dues: { status: 'not_tracked', note: 'Fee dues are not tracked yet.' }, createdAt: '2026-11-10T04:00:00Z', updatedAt: '2026-11-10T04:00:00Z', ...o });
+const transfers = [
+  transfer(1, 'requested', { student: { id: 's1', name: 'Kabir Mehta', registrationCode: 'R-0002' }, reason: 'other', reasonNote: 'Moving abroad for a year; the family expects to return in 2028.' }),
+  transfer(2, 'approved', { student: { id: 's2', name: 'Meera Iyer', registrationCode: 'R-0003' }, className: 'Class 8', sectionName: 'B', reason: 'another_school', requestedOn: '2026-11-05' }),
+  transfer(3, 'completed', { tcNumber: 'TC-000012', tcIssuedOn: '2026-11-20', requestedOn: '2026-11-01', reason: 'health' }),
+  transfer(4, 'rejected', { student: { id: 's4', name: 'Ishaan Verma', registrationCode: 'R-0007' }, className: 'Class 3', sectionName: null, reason: 'financial', requestedOn: '2026-10-28' }),
+  transfer(5, 'cancelled', { student: { id: 's5', name: 'Diya Singh', registrationCode: 'R-0009' }, className: null, sectionName: null, yearName: null, reason: 'relocation', destinationSchool: null, lastAttendanceDate: null, requestedOn: '2026-10-20' }),
+];
+const certificate = { tcNumber: 'TC-000012', issuedOn: '2026-11-20', schoolName: 'Springfield Public School', student: { fullName: 'Asha Rao', registrationCode: 'R-0003', dateOfBirth: '2015-06-01', gender: 'female', admissionDate: '2021-04-05' }, className: 'Class 5', sectionName: 'A', yearName: '2026-27', lastAttendanceDate: '2026-11-08', reason: 'health', reasonLabel: 'Health', reasonNote: 'Advised a change of climate by the family doctor.', destinationSchool: 'Pune Public School', guardians: [{ name: 'Meera Rao', relation: 'mother' }, { name: 'Anil Rao', relation: 'father' }] };
+let transfersMode = 'ready';
 
 let approvalsEmpty = false;
 let handoverDenied = false;
@@ -220,6 +232,15 @@ async function mockApi(page, signedIn, mfa) {
     }
     if (path === '/admission-insights') return insightsMode === 'error' ? json(500, { code: 'internal', detail: 'The figures could not be loaded. Please try again.' }) : json(200, insightsMode === 'empty' ? emptyInsights : insights);
     if (path === '/enquiries') return json(200, { items: enquiries, page: { number: 1, size: 25, total: enquiries.length } });
+    if (path === '/student-transfers' && route.request().method() === 'GET') {
+      if (transfersMode === 'error') return json(500, { code: 'internal', detail: 'The transfers could not be loaded. Please try again.' });
+      const items = transfersMode === 'empty' ? [] : transfers;
+      return json(200, { items, page: { number: 1, size: 25, total: items.length } });
+    }
+    if (path === '/student-transfers' && route.request().method() === 'POST') return transfersMode === 'conflict' ? json(409, { code: 'open_transfer', detail: 'x' }) : json(201, transfers[0]);
+    if (path.endsWith('/certificate') && path.startsWith('/student-transfers/')) return transfersMode === 'notcompleted' ? json(409, { code: 'not_completed', detail: 'x' }) : json(200, certificate);
+    if (path.endsWith('/complete') && path.startsWith('/student-transfers/')) return json(200, { transfer: transfers[2], alreadyCompleted: false });
+    if (path.startsWith('/student-transfers/')) return json(200, transfers[0]);
     if (path === '/admissions') return json(200, { items: admissions, page: { number: 1, size: 25, total: admissions.length } });
     if (path.startsWith('/admissions/') && path.endsWith('/admit')) return json(201, { registrationId: 'r43', applicationNumber: 'REG-00043', alreadyAdmitted: false, student: { id: 's9', registrationCode: 'STU-000045', fullName: 'Diya Singh', className: 'Nursery', sectionName: 'A', rollNumber: '1' }, enrollmentId: 'e1', yearName: '2027-28', guardians: [], notes: [] });
     if (path === '/class-section-mappings') return json(200, { items: [{ id: 'm1', classId: 'c1', yearId: 'y1', sectionId: 's1', sectionName: 'A' }, { id: 'm2', classId: 'c1', yearId: 'y1', sectionId: 's2', sectionName: 'B' }, { id: 'm3', classId: 'c2', yearId: 'y1', sectionId: 's1', sectionName: 'A' }], page: { number: 1, size: 200, total: 3 } });
@@ -249,6 +270,21 @@ const screens = [
   { name: 'registrations', path: '/registrations', signedIn: true, ready: 'text=Ishaan Verma' },
   { name: 'admissions', path: '/admissions', signedIn: true, ready: 'text=Diya Singh' },
   { name: 'admissions-admit', path: '/admissions', signedIn: true, ready: 'text=Diya Singh', then: (p) => p.getByRole('button', { name: /^Admit REG-000043/ }).click().then(() => p.waitForSelector('role=dialog')) },
+  { name: 'transfers', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta' },
+  { name: 'transfers-add', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: 'Request transfer' }).click().then(() => p.waitForSelector('role=dialog')) },
+  { name: 'transfers-add-other-error', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta', then: async (p) => { await p.getByRole('button', { name: 'Request transfer' }).click(); const d = p.getByRole('dialog', { name: 'Request a transfer' }); await d.getByRole('combobox', { name: 'Reason *' }).selectOption('other'); await d.getByLabel('Note *').fill('Moving'); await d.getByLabel('Note *').fill(''); await d.getByRole('button', { name: 'Request transfer' }).click(); await d.getByText('Tell us the reason when you choose Other.').waitFor(); } },
+  { name: 'transfers-add-conflict', path: '/transfers', signedIn: true, transfers: 'conflict', ready: 'text=Kabir Mehta', then: async (p) => { await p.getByRole('button', { name: 'Request transfer' }).click(); const d = p.getByRole('dialog', { name: 'Request a transfer' }); await d.getByRole('option', { name: /Asha Rao/ }).waitFor({ state: 'attached' }); await d.getByRole('combobox', { name: 'Student results' }).selectOption({ label: 'Asha Rao (R-0001) · Class 5 A' }); await d.getByRole('combobox', { name: 'Reason *' }).selectOption('health'); await d.getByRole('button', { name: 'Request transfer' }).click(); await d.getByRole('alert').waitFor(); } },
+  { name: 'transfers-edit', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^Edit Kabir Mehta/ }).click().then(() => p.waitForSelector('role=dialog')) },
+  { name: 'transfers-detail-requested', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^View Kabir Mehta/ }).click().then(() => p.waitForSelector('[data-testid=transfer-detail]')) },
+  { name: 'transfers-detail-completed', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^View Asha Rao/ }).click().then(() => p.waitForSelector('[data-testid=transfer-detail]')) },
+  { name: 'transfers-detail-rejected', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^View Ishaan Verma/ }).click().then(() => p.waitForSelector('[data-testid=transfer-detail]')) },
+  { name: 'transfers-complete-confirm', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^Complete transfer of Meera Iyer/ }).click().then(() => p.waitForSelector('role=alertdialog')) },
+  { name: 'transfers-cancel-confirm', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^Cancel transfer of Kabir Mehta/ }).click().then(() => p.waitForSelector('role=alertdialog')) },
+  { name: 'transfers-empty', path: '/transfers', signedIn: true, transfers: 'empty', ready: 'text=No transfers yet' },
+  { name: 'transfers-error', path: '/transfers', signedIn: true, transfers: 'error', ready: 'text=could not be loaded' },
+  { name: 'transfer-certificate', full: true, path: '/transfers/t3/certificate', signedIn: true, ready: 'role=heading[name="Transfer Certificate"]' },
+  { name: 'transfer-certificate-print', full: true, path: '/transfers/t3/certificate', signedIn: true, print: true, a4: true, ready: 'role=heading[name="Transfer Certificate"]' },
+  { name: 'transfer-certificate-not-completed', path: '/transfers/t1/certificate', signedIn: true, transfers: 'notcompleted', ready: 'text=No certificate yet' },
   { name: 'registrations-add', path: '/registrations', signedIn: true, ready: 'text=Ishaan Verma', then: (p) => p.getByRole('button', { name: 'Add registration' }).click().then(() => p.waitForSelector('role=dialog')) },
   { name: 'enquiries-register', path: '/enquiries', signedIn: true, ready: 'text=Ishaan Verma', then: (p) => p.getByRole('button', { name: /^Register ENQ-102/ }).click().then(() => p.waitForSelector('role=alertdialog')) },
   { name: 'users', path: '/users', signedIn: true, ready: 'text=Ravi Nair' },
@@ -305,6 +341,7 @@ for (const s of screens) {
     const page = await ctx.newPage();
     approvalsEmpty = Boolean(s.empty);
     insightsMode = s.insights ?? 'ready';
+    transfersMode = s.transfers ?? 'ready';
     handoverDenied = Boolean(s.denied);
     await mockApi(page, s.signedIn, s.mfa);
     await page.goto(BASE + s.path);
@@ -314,6 +351,7 @@ for (const s of screens) {
     await page.waitForTimeout(400);
     const file = `${OUT}/${s.name}-${size.name}.png`;
     await page.screenshot({ path: file, fullPage: Boolean(s.full) });
+    if (s.a4 && size.name === 'desktop') await page.pdf({ path: `${OUT}/${s.name}.pdf`, preferCSSPageSize: true });
     const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
     const issues = axe.violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.length }));
     serious += issues.filter((i) => i.impact === 'serious' || i.impact === 'critical').length;

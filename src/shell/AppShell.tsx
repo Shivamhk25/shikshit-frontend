@@ -224,7 +224,7 @@ export function AppShell() {
               <NotificationBell api={notificationsApi} enabled={!payload.visit} />
             </div>
           </header>
-          <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-8 lg:px-12 lg:py-12">
+          <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-8 lg:px-12 lg:py-12 print:max-w-none print:p-0">
             <Outlet />
           </main>
         </div>

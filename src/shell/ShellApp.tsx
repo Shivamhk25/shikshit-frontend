@@ -20,6 +20,8 @@ import { InsightsPage } from '../features/adm/InsightsPage';
 import { enquiriesDescriptor } from '../features/adm/enquiries';
 import { AdmissionsPage } from '../features/adm/AdmissionsPage';
 import { enquiriesWithRegister, registrationsDescriptor } from '../features/adm/registrations';
+import { TransferCertificatePage } from '../features/stu/TransferCertificatePage';
+import { TransfersPage } from '../features/stu/TransfersPage';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
 import { chaptersDescriptor, classSectionsDescriptor, subjectClassesDescriptor, textbooksDescriptor } from '../features/aca/mappings';
 import { campusesDescriptor, divisionsDescriptor, electivesDescriptor, eventsDescriptor, holidaysDescriptor } from '../features/aca/masters';
@@ -250,6 +252,22 @@ function Gate() {
             element={
               <RequirePermission path="/student-addresses">
                 <ResourcePage descriptor={addressesDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="transfers"
+            element={
+              <RequirePermission path="/transfers">
+                <TransfersPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="transfers/:transferId/certificate"
+            element={
+              <RequirePermission path="/transfers">
+                <TransferCertificatePage />
               </RequirePermission>
             }
           />
