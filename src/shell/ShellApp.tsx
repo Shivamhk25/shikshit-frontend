@@ -14,6 +14,21 @@ import { AssignmentsPage } from '../features/iam/AssignmentsPage';
 import { ParentLinksPage } from '../features/iam/ParentLinksPage';
 import { AppearancePage } from '../features/iam/AppearancePage';
 import { RoomsPage } from '../features/aca/RoomsPage';
+import { DevicesPage } from '../features/dev/DevicesPage';
+import { FeeCategoriesPage } from '../features/fee/FeeCategoriesPage';
+import { FeeTypesPage } from '../features/fee/FeeTypesPage';
+import { ConcessionTypesPage } from '../features/fee/ConcessionTypesPage';
+import { FeeSchedulesPage } from '../features/fee/FeeSchedulesPage';
+import { LateFeeRulesPage } from '../features/fee/LateFeeRulesPage';
+import { PaymentsPage } from '../features/fee/PaymentsPage';
+import { PaymentRefundsPage } from '../features/fee/PaymentRefundsPage';
+import { StudentFeeCollectionRegistersPage } from '../features/fee/StudentFeeCollectionRegistersPage';
+import { StudentConcessionsPage } from '../features/fee/StudentConcessionsPage';
+import { StudentFeeElectionsPage } from '../features/fee/StudentFeeElectionsPage';
+import { FeeCollectionsPage } from '../features/fee/FeeCollectionsPage';
+import { StudentAbsencesPage } from '../features/att/StudentAbsencesPage';
+import { AttendanceStatusesPage } from '../features/att/AttendanceStatusesPage';
+import { AttendanceRegistersPage } from '../features/att/AttendanceRegistersPage';
 import { ResourcePage } from '../features/aca/ResourcePage';
 import { discussionsDescriptor } from '../features/adm/discussions';
 import { InsightsPage } from '../features/adm/InsightsPage';
@@ -23,6 +38,7 @@ import { PromotionsPage } from '../features/stu/PromotionsPage';
 import { enquiriesWithRegister, registrationsDescriptor } from '../features/adm/registrations';
 import { TransferCertificatePage } from '../features/stu/TransferCertificatePage';
 import { TransfersPage } from '../features/stu/TransfersPage';
+import { ElectivesPage } from '../features/stu/ElectivesPage';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
 import { chaptersDescriptor, classSectionsDescriptor, subjectClassesDescriptor, textbooksDescriptor } from '../features/aca/mappings';
 import { campusesDescriptor, divisionsDescriptor, electivesDescriptor, eventsDescriptor, holidaysDescriptor } from '../features/aca/masters';
@@ -109,6 +125,126 @@ function Gate() {
             element={
               <RequirePermission path="/rooms">
                 <RoomsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="devices"
+            element={
+              <RequirePermission path="/devices">
+                <DevicesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="fee-categories"
+            element={
+              <RequirePermission path="/fee-categories">
+                <FeeCategoriesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="fee-types"
+            element={
+              <RequirePermission path="/fee-types">
+                <FeeTypesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="concession-types"
+            element={
+              <RequirePermission path="/concession-types">
+                <ConcessionTypesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="fee-schedules"
+            element={
+              <RequirePermission path="/fee-schedules">
+                <FeeSchedulesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="late-fee-rules"
+            element={
+              <RequirePermission path="/late-fee-rules">
+                <LateFeeRulesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="payments"
+            element={
+              <RequirePermission path="/payments">
+                <PaymentsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="payment-refunds"
+            element={
+              <RequirePermission path="/payment-refunds">
+                <PaymentRefundsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-fee-collection-registers"
+            element={
+              <RequirePermission path="/student-fee-collection-registers">
+                <StudentFeeCollectionRegistersPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-concessions"
+            element={
+              <RequirePermission path="/student-concessions">
+                <StudentConcessionsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-fee-elections"
+            element={
+              <RequirePermission path="/student-fee-elections">
+                <StudentFeeElectionsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-absences"
+            element={
+              <RequirePermission path="/student-absences">
+                <StudentAbsencesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="attendance-statuses"
+            element={
+              <RequirePermission path="/attendance-statuses">
+                <AttendanceStatusesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="attendance-registers"
+            element={
+              <RequirePermission path="/attendance-registers">
+                <AttendanceRegistersPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="fee-collection"
+            element={
+              <RequirePermission path="/fee-collection">
+                <FeeCollectionsPage />
               </RequirePermission>
             }
           />
@@ -277,6 +413,22 @@ function Gate() {
             element={
               <RequirePermission path="/transfers">
                 <TransferCertificatePage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-electives"
+            element={
+              <RequirePermission path="/student-electives">
+                <ElectivesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-elective-changes"
+            element={
+              <RequirePermission path="/student-elective-changes">
+                <ElectivesPage />
               </RequirePermission>
             }
           />
