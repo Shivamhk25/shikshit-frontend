@@ -23,6 +23,8 @@ import { PromotionsPage } from '../features/stu/PromotionsPage';
 import { enquiriesWithRegister, registrationsDescriptor } from '../features/adm/registrations';
 import { TransferCertificatePage } from '../features/stu/TransferCertificatePage';
 import { TransfersPage } from '../features/stu/TransfersPage';
+import { PausesPage } from '../features/stu/PausesPage';
+import { AlumniPage } from '../features/stu/AlumniPage';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
 import { chaptersDescriptor, classSectionsDescriptor, subjectClassesDescriptor, textbooksDescriptor } from '../features/aca/mappings';
 import { campusesDescriptor, divisionsDescriptor, electivesDescriptor, eventsDescriptor, holidaysDescriptor } from '../features/aca/masters';
@@ -277,6 +279,22 @@ function Gate() {
             element={
               <RequirePermission path="/transfers">
                 <TransferCertificatePage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-pauses"
+            element={
+              <RequirePermission path="/student-pauses">
+                <PausesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="alumni"
+            element={
+              <RequirePermission path="/alumni">
+                <AlumniPage />
               </RequirePermission>
             }
           />
