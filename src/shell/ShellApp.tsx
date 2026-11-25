@@ -24,6 +24,7 @@ import { YearRolloverPage } from '../features/ten/YearRolloverPage';
 import { enquiriesWithRegister, registrationsDescriptor } from '../features/adm/registrations';
 import { TransferCertificatePage } from '../features/stu/TransferCertificatePage';
 import { ControlTowerPage } from '../features/onboarding/ControlTowerPage';
+import { StudentIdentityPage } from '../features/stu/StudentIdentityPage';
 import { TransfersPage } from '../features/stu/TransfersPage';
 import { ElectivesPage } from '../features/stu/ElectivesPage';
 import { ElectiveChangesPage } from '../features/stu/ElectiveChangesPage';
@@ -283,6 +284,14 @@ function Gate() {
             element={
               <RequirePermission path="/control-tower">
                 <ControlTowerPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-identity"
+            element={
+              <RequirePermission path="/student-identity">
+                <StudentIdentityPage />
               </RequirePermission>
             }
           />
