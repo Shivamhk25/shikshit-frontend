@@ -1,0 +1,34 @@
+{
+  "name": "rooms", "Type": "Room", "module": "aca", "screenId": "rooms", "title": "Rooms", "singular": "room",
+  "doc": "ACA-24 Rooms", "endpoint": "/rooms", "permission": "aca.rooms", "icon": "DoorOpen", "parity": "Companion", "mobileRoute": "/rooms",
+  "blurb": "Classrooms, labs and halls, with their capacity.",
+  "defaultSort": "displayOrder", "searchPlaceholder": "Search by name, code or building", "label": "name",
+  "consts": { "TYPES": [
+    { "value": "classroom", "label": "Classroom" }, { "value": "lab", "label": "Lab" }, { "value": "library", "label": "Library" },
+    { "value": "hall", "label": "Hall" }, { "value": "staff", "label": "Staff room" }, { "value": "other", "label": "Other" } ] },
+  "columns": [
+    { "key": "code", "label": "Code", "sort": "code", "render": "dash" },
+    { "key": "name", "label": "Name", "sort": "name" },
+    { "key": "type", "label": "Type", "render": "options:TYPES" },
+    { "key": "capacity", "label": "Capacity", "sort": "capacity" },
+    { "key": "building", "label": "Building", "sort": "building", "render": "dash" },
+    { "key": "status", "label": "Status", "render": "active" }
+  ],
+  "fields": [
+    { "key": "name", "label": "Name", "kind": "text", "required": true, "maxLength": 100 },
+    { "key": "code", "label": "Code", "kind": "text", "nullable": true, "maxLength": 20, "hint": "Must be unique. Leave blank if the room has no code." },
+    { "key": "type", "label": "Type", "kind": "select", "nullable": true, "optionsConst": "TYPES" },
+    { "key": "capacity", "label": "Capacity", "kind": "number", "required": true, "min": 1, "max": 10000, "default": 30 },
+    { "key": "building", "label": "Building", "kind": "text", "nullable": true, "maxLength": 100 },
+    { "key": "floor", "label": "Floor", "kind": "text", "nullable": true, "maxLength": 20 },
+    { "key": "availableForTimetable", "label": "Available for timetabling", "kind": "checkbox", "default": true },
+    { "key": "displayOrder", "label": "Display order", "kind": "number", "min": 0, "max": 100000, "default": 0 },
+    { "key": "description", "label": "Description", "kind": "textarea", "nullable": true, "maxLength": 500 },
+    { "key": "status", "label": "Status", "kind": "select", "required": true, "default": "active", "enum": [{ "value": "active" }, { "value": "inactive" }],
+      "options": [{ "value": "active", "label": "Active" }, { "value": "inactive", "label": "Inactive" }] }
+  ],
+  "review": { "order": 20, "rows": [
+    { "code": "R1", "name": "Room 1", "type": "classroom", "capacity": 30, "building": "Main", "floor": null, "availableForTimetable": true, "displayOrder": 1, "description": null, "status": "active" },
+    { "code": "L1", "name": "Science Lab", "type": "lab", "capacity": 24, "building": "Annex", "floor": "1", "availableForTimetable": true, "displayOrder": 2, "description": null, "status": "active" }
+  ] }
+}

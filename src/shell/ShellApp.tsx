@@ -25,6 +25,8 @@ import { enquiriesWithRegister, registrationsDescriptor } from '../features/adm/
 import { TransferCertificatePage } from '../features/stu/TransferCertificatePage';
 import { StudentIdentityPage } from '../features/stu/StudentIdentityPage';
 import { TransfersPage } from '../features/stu/TransfersPage';
+import { ElectivesPage } from '../features/stu/ElectivesPage';
+import { ElectiveChangesPage } from '../features/stu/ElectiveChangesPage';
 import { PausesPage } from '../features/stu/PausesPage';
 import { AlumniPage } from '../features/stu/AlumniPage';
 import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studentGuardiansDescriptor, studentsDescriptor } from '../features/stu/students';
@@ -281,6 +283,22 @@ function Gate() {
             element={
               <RequirePermission path="/student-identity">
                 <StudentIdentityPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-electives"
+            element={
+              <RequirePermission path="/student-electives">
+                <ElectivesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="student-elective-changes"
+            element={
+              <RequirePermission path="/student-elective-changes">
+                <ElectiveChangesPage />
               </RequirePermission>
             }
           />
