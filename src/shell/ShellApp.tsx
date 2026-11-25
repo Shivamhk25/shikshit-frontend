@@ -23,6 +23,7 @@ import { PromotionsPage } from '../features/stu/PromotionsPage';
 import { YearRolloverPage } from '../features/ten/YearRolloverPage';
 import { enquiriesWithRegister, registrationsDescriptor } from '../features/adm/registrations';
 import { TransferCertificatePage } from '../features/stu/TransferCertificatePage';
+import { ControlTowerPage } from '../features/onboarding/ControlTowerPage';
 import { TransfersPage } from '../features/stu/TransfersPage';
 import { PausesPage } from '../features/stu/PausesPage';
 import { AlumniPage } from '../features/stu/AlumniPage';
@@ -272,6 +273,14 @@ function Gate() {
             element={
               <RequirePermission path="/student-addresses">
                 <ResourcePage descriptor={addressesDescriptor} />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="control-tower"
+            element={
+              <RequirePermission path="/control-tower">
+                <ControlTowerPage />
               </RequirePermission>
             }
           />
