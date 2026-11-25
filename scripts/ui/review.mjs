@@ -30,6 +30,8 @@ const nav = [
   { screenId: 'transfers', label: 'Transfers', order: 46 },
   { screenId: 'student_pauses', label: 'Pauses', order: 47 },
   { screenId: 'alumni', label: 'Alumni', order: 48 },
+  { screenId: 'student_electives', label: 'Student electives', order: 49 },
+  { screenId: 'student_elective_changes', label: 'Elective change requests', order: 50 },
   { screenId: 'scope_assignments', label: 'Class assignments', order: 60 },
   { screenId: 'users', label: 'Users', order: 61 },
   { screenId: 'roles', label: 'Roles', order: 62 },
@@ -39,6 +41,7 @@ const nav = [
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
 const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'onb.control_tower.view', 'onb.control_tower.edit', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create', 'stu.student_promotions.view', 'stu.student_promotions.create', 'stu.student_promotions.edit', 'stu.student_promotions.delete', 'stu.student_transfers.view', 'stu.student_transfers.create', 'stu.student_transfers.edit', 'stu.student_transfers.delete', 'stu.student_pauses.view', 'stu.student_pauses.create', 'stu.student_pauses.edit', 'stu.alumni.view'];
+permissions.push('stu.student_electives.view', 'stu.student_electives.edit', 'stu.student_electives.delete', 'stu.student_elective_approvals.view', 'stu.student_elective_approvals.create', 'stu.student_elective_approvals.edit');
 permissions.push('ten.year_rollover.view', 'ten.year_rollover.create', 'ten.year_rollover.edit');
 const admission = (n, o) => ({ id: `r${n}`, applicationNumber: `REG-0000${n}`, appliedOn: '2026-11-12', fullName: 'Diya Singh', dateOfBirth: '2021-03-14', gender: 'female', fatherName: 'Rahul Singh', motherName: null, guardianName: null, guardianPhone: '9810012345', classId: 'c1', className: 'Nursery', sectionId: null, sectionName: null, yearId: 'y1', yearName: '2027-28', status: 'accepted', admitted: false, admittedAt: null, studentId: null, studentCode: null, enrolledSectionName: null, rollNumber: null, ...o });
 const admissions = [admission(43, {}), admission(46, { fullName: 'Kabir Iyer', gender: null, className: 'Class 1', classId: 'c2' }), admission(47, { fullName: 'Aarav Sharma', sectionName: 'A' })];
@@ -161,6 +164,20 @@ const transfers = [
 ];
 const certificate = { tcNumber: 'TC-000012', issuedOn: '2026-11-20', schoolName: 'Springfield Public School', student: { fullName: 'Asha Rao', registrationCode: 'R-0003', dateOfBirth: '2015-06-01', gender: 'female', admissionDate: '2021-04-05' }, className: 'Class 5', sectionName: 'A', yearName: '2026-27', lastAttendanceDate: '2026-11-08', reason: 'health', reasonLabel: 'Health', reasonNote: 'Advised a change of climate by the family doctor.', destinationSchool: 'Pune Public School', guardians: [{ name: 'Meera Rao', relation: 'mother' }, { name: 'Anil Rao', relation: 'father' }] };
 let transfersMode = 'ready';
+// Student electives (STU-04) and change requests (STU-05)
+const elSubj = (id, name) => ({ id, code: id.toUpperCase(), name });
+const elGroup = { id: 'g1', name: 'Stream subjects', code: null, minSubjects: 1, maxSubjects: 2, enforceLimits: true };
+const elChoice = (n, name, subjects, o) => ({ id: `e${n}`, student: { id: `s${n}`, name, registrationCode: `R-000${n}` }, yearId: 'y1', yearName: '2026-27', classId: 'c5', className: 'Class 11', sectionId: 'sa', sectionName: 'A', group: elGroup, subjects, offered: [elSubj('m', 'Mathematics'), elSubj('b', 'Biology'), elSubj('cs', 'Computer Science')], status: 'chosen', withinLimits: true, warnings: [], createdAt: '2026-11-01T04:00:00Z', updatedAt: '2026-11-01T04:00:00Z', ...o });
+const elChoices = [
+  elChoice(1, 'Asha Rao', [elSubj('m', 'Mathematics'), elSubj('b', 'Biology')], { status: 'confirmed' }),
+  elChoice(2, 'Kabir Mehta', [elSubj('cs', 'Computer Science')]),
+  elChoice(3, 'Meera Iyer', [], { withinLimits: false, warnings: [{ code: 'below_minimum', message: 'Below the minimum of 1 subject.' }] }),
+];
+const elChange = (n, status, o) => ({ id: `ch${n}`, student: { id: `s${n}`, name: 'Asha Rao', registrationCode: `R-000${n}` }, yearId: 'y1', yearName: '2026-27', className: 'Class 11', sectionName: 'A', group: { id: 'g1', name: 'Stream subjects' }, choiceId: 'e1', fromSubject: elSubj('m', 'Mathematics'), toSubject: elSubj('b', 'Biology'), wantedFrom: '2026-12-01', reason: 'Wants to study medicine after school.', status, approvalRequestId: status === 'requested' ? 'ap1' : null, requestedBy: { id: 'u1', name: 'Asha Verma' }, decision: null, cancelledAt: null, createdAt: '2026-11-20T04:00:00Z', updatedAt: '2026-11-20T04:00:00Z', ...o });
+const elChanges = [elChange(1, 'requested', { student: { id: 's2', name: 'Kabir Mehta', registrationCode: 'R-0002' } }), elChange(2, 'approved', { decision: { outcome: 'approved', decidedBy: { id: 'u2', name: 'Ravi Nair' }, decidedAt: '2026-11-21T04:00:00Z', note: 'Fine.' } }), elChange(3, 'rejected', { decision: { outcome: 'rejected', decidedBy: { id: 'u2', name: 'Ravi Nair' }, decidedAt: '2026-11-21T04:00:00Z', note: 'Too late in the term.' } })];
+const elRoster = { year: { id: 'y1', name: '2026-27' }, class: { id: 'c5', name: 'Class 11' }, section: { id: 'sa', name: 'A' }, group: elGroup, offered: [elSubj('m', 'Mathematics'), elSubj('b', 'Biology'), elSubj('cs', 'Computer Science')], students: elChoices.map((c, i) => ({ student: c.student, rollNumber: String(i + 1), choiceId: c.id, status: c.status, subjects: c.subjects, withinLimits: c.withinLimits, warnings: c.warnings })) };
+let electivesMode = 'ready';
+const elRosterOpen = async (p) => { await p.getByRole('tab', { name: 'Class roster' }).click(); await p.getByLabel('Academic year').selectOption('y1'); await p.getByLabel('Class', { exact: true }).selectOption('c5'); await p.getByRole('combobox', { name: 'Section' }).selectOption({ index: 1 }); await p.getByLabel('Elective group').selectOption('g1'); await p.getByRole('button', { name: 'Show students' }).click(); await p.waitForSelector('role=checkbox[name="Biology for Kabir Mehta"]'); };
 // Student pauses (STU-09) and Alumni (STU-10)
 const pause = (n, status, o) => ({ id: `p${n}`, student: { id: `s${n}`, name: 'Asha Rao', registrationCode: `R-000${n}` }, className: 'Class 5', sectionName: 'A', yearName: '2026-27', pausedFrom: '2026-11-03', days: status === 'cancelled' ? null : 20, expectedBack: '2026-12-15', overdue: false, reason: 'illness', reasonNote: null, status, endedOn: status === 'ended' ? '2026-11-23' : null, closeNote: null, figures: { owed: { status: 'not_tracked', note: 'Fee dues are not tracked yet' }, missed: { status: 'not_tracked', note: 'Attendance is not tracked yet' } }, createdAt: '2026-11-03T04:00:00Z', updatedAt: '2026-11-03T04:00:00Z', ...o });
 const pauses = [
@@ -355,6 +372,18 @@ async function mockApi(page, signedIn, mfa) {
       return json(200, { items, page: { number: 1, size: 25, total: items.length } });
     }
     if (path === '/academic-years' && alumniMode !== 'off') return json(200, { items: [{ id: 'y1', name: '2025-26' }, { id: 'y2', name: '2026-27' }], page: { number: 1, size: 200, total: 2 } });
+    if (path === '/student-electives' && route.request().method() === 'GET') {
+      if (electivesMode === 'error') return json(500, { code: 'internal', detail: 'The choices could not be loaded. Please try again.' });
+      const items = electivesMode === 'empty' ? [] : elChoices;
+      return json(200, { items, page: { number: 1, size: 25, total: items.length } });
+    }
+    if (path === '/student-electives/roster') return json(200, elRoster);
+    if (path.startsWith('/student-electives/')) return json(200, elChoices[0]);
+    if (path === '/student-elective-changes' && route.request().method() === 'GET') {
+      const items = electivesMode === 'empty' ? [] : elChanges;
+      return json(200, { items, page: { number: 1, size: 25, total: items.length } });
+    }
+    if (path === '/elective-groups') return json(200, { items: [{ id: 'g1', name: 'Stream subjects' }], page: { number: 1, size: 200, total: 1 } });
     if (path === '/student-transfers' && route.request().method() === 'GET') {
       if (transfersMode === 'error') return json(500, { code: 'internal', detail: 'The transfers could not be loaded. Please try again.' });
       const items = transfersMode === 'empty' ? [] : transfers;
@@ -436,6 +465,16 @@ const screens = [
   { name: 'transfers-cancel-confirm', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^Cancel transfer of Kabir Mehta/ }).click().then(() => p.waitForSelector('role=alertdialog')) },
   { name: 'transfers-empty', path: '/transfers', signedIn: true, transfers: 'empty', ready: 'text=No transfers yet' },
   { name: 'transfers-error', path: '/transfers', signedIn: true, transfers: 'error', ready: 'text=could not be loaded' },
+  { name: 'electives', path: '/student-electives', signedIn: true, ready: 'text=Kabir Mehta' },
+  { name: 'electives-edit', path: '/student-electives', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: 'Edit subjects of Kabir Mehta' }).click().then(() => p.waitForSelector('role=checkbox[name="Biology"]')) },
+  { name: 'electives-request-change', path: '/student-electives', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: 'Request a change for Asha Rao' }).click().then(() => p.waitForSelector('role=dialog')) },
+  { name: 'electives-remove-confirm', path: '/student-electives', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: 'Remove choice of Kabir Mehta' }).click().then(() => p.waitForSelector('role=alertdialog')) },
+  { name: 'electives-roster', full: true, promo: 'draft', path: '/student-electives', signedIn: true, ready: 'text=Kabir Mehta', then: elRosterOpen },
+  { name: 'electives-empty', path: '/student-electives', signedIn: true, electives: 'empty', ready: 'text=No elective choices yet' },
+  { name: 'electives-error', path: '/student-electives', signedIn: true, electives: 'error', ready: 'text=could not be loaded' },
+  { name: 'elective-changes', path: '/student-elective-changes', signedIn: true, ready: 'text=Wants to study medicine' , then: (p) => p.waitForSelector('text=Too late in the term') },
+  { name: 'elective-changes-cancel', path: '/student-elective-changes', signedIn: true, ready: 'text=Wants to study medicine', then: (p) => p.getByRole('button', { name: 'Cancel the request for Kabir Mehta' }).click().then(() => p.waitForSelector('role=alertdialog')) },
+  { name: 'elective-changes-empty', path: '/student-elective-changes', signedIn: true, electives: 'empty', ready: 'text=No change requests yet' },
   { name: 'pauses', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta' },
   { name: 'pauses-add', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: 'Pause a student' }).click().then(() => p.waitForSelector('role=dialog')) },
   { name: 'pauses-add-other-error', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta', then: async (p) => { await p.getByRole('button', { name: 'Pause a student' }).click(); const d = p.getByRole('dialog', { name: 'Pause a student' }); await d.getByRole('combobox', { name: 'Reason *' }).selectOption('other'); await d.getByRole('button', { name: 'Pause student' }).click(); await d.getByText('Tell us the reason when you choose Other.').waitFor(); } },
@@ -522,6 +561,7 @@ for (const s of screens) {
     promoMode = s.promo ?? 'off';
     rolloverMode = s.rollover ?? 'off';
     transfersMode = s.transfers ?? 'ready';
+    electivesMode = s.electives ?? 'ready';
     pausesMode = s.pauses ?? 'ready';
     alumniMode = s.alumni ?? 'ready';
     towerMode = s.tower ?? 'ready';
