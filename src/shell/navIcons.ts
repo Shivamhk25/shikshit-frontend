@@ -1,6 +1,6 @@
 import {
   ArrowRightLeft, Award, BarChart3, CalendarSync, CirclePause, BookMarked, ClipboardCheck, FileUser, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList,
-  Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, HeartHandshake, Home, Layers, Link2, MessagesSquare,
+  Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, HeartHandshake, IdCard, Home, Layers, Link2, MessagesSquare,
   Palette, ListChecks, ListOrdered, MapPin, School, ShieldCheck, Sun, Upload, UserCheck, UserCog, UserRound,
   UserSearch, Users, UserRoundCheck, TrendingUp, type LucideIcon,
 } from 'lucide-react';
@@ -36,6 +36,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   student_guardians: Link2,
   student_addresses: MapPin,
   promotions: TrendingUp,
+  student_identity: IdCard,
   transfers: ArrowRightLeft,
   student_electives: ListChecks,
   student_elective_changes: ClipboardCheck,
@@ -82,6 +83,7 @@ export const NAV_BLURBS: Record<string, string> = {
   student_guardians: 'Who looks after which student.',
   student_addresses: 'Home and mailing addresses.',
   promotions: 'Move a class up, repeat it or graduate it at the end of the year.',
+  student_identity: 'Find a student and see their codes, guardians and ID card.',
   transfers: 'Students leaving the school, from request to transfer certificate.',
   student_electives: 'Which subjects each student chose from the elective groups.',
   student_elective_changes: 'Requests to swap one elective subject for another.',

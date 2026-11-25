@@ -25,6 +25,7 @@ const nav = [
   { screenId: 'admissions', label: 'Admissions', order: 38 },
   { screenId: 'students', label: 'Students', order: 40 },
   { screenId: 'guardians', label: 'Guardians', order: 42 },
+  { screenId: 'student_identity', label: 'Student identity', order: 44 },
   { screenId: 'promotions', label: 'Promotions', order: 45 },
   { screenId: 'transfers', label: 'Transfers', order: 46 },
   { screenId: 'student_pauses', label: 'Pauses', order: 47 },
@@ -39,7 +40,7 @@ const nav = [
   { screenId: 'approvals', label: 'Approvals', order: 70 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
-const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create', 'stu.student_promotions.view', 'stu.student_promotions.create', 'stu.student_promotions.edit', 'stu.student_promotions.delete', 'stu.student_transfers.view', 'stu.student_transfers.create', 'stu.student_transfers.edit', 'stu.student_transfers.delete', 'stu.student_pauses.view', 'stu.student_pauses.create', 'stu.student_pauses.edit', 'stu.alumni.view'];
+const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create', 'stu.student_promotions.view', 'stu.student_promotions.create', 'stu.student_promotions.edit', 'stu.student_promotions.delete', 'stu.student_identity.view', 'stu.student_transfers.view', 'stu.student_transfers.create', 'stu.student_transfers.edit', 'stu.student_transfers.delete', 'stu.student_pauses.view', 'stu.student_pauses.create', 'stu.student_pauses.edit', 'stu.alumni.view'];
 permissions.push('stu.student_electives.view', 'stu.student_electives.edit', 'stu.student_electives.delete', 'stu.student_elective_approvals.view', 'stu.student_elective_approvals.create', 'stu.student_elective_approvals.edit');
 permissions.push('ten.year_rollover.view', 'ten.year_rollover.create', 'ten.year_rollover.edit');
 const admission = (n, o) => ({ id: `r${n}`, applicationNumber: `REG-0000${n}`, appliedOn: '2026-11-12', fullName: 'Diya Singh', dateOfBirth: '2021-03-14', gender: 'female', fatherName: 'Rahul Singh', motherName: null, guardianName: null, guardianPhone: '9810012345', classId: 'c1', className: 'Nursery', sectionId: null, sectionName: null, yearId: 'y1', yearName: '2027-28', status: 'accepted', admitted: false, admittedAt: null, studentId: null, studentCode: null, enrolledSectionName: null, rollNumber: null, ...o });
@@ -155,6 +156,25 @@ const transfers = [
 ];
 const certificate = { tcNumber: 'TC-000012', issuedOn: '2026-11-20', schoolName: 'Springfield Public School', student: { fullName: 'Asha Rao', registrationCode: 'R-0003', dateOfBirth: '2015-06-01', gender: 'female', admissionDate: '2021-04-05' }, className: 'Class 5', sectionName: 'A', yearName: '2026-27', lastAttendanceDate: '2026-11-08', reason: 'health', reasonLabel: 'Health', reasonNote: 'Advised a change of climate by the family doctor.', destinationSchool: 'Pune Public School', guardians: [{ name: 'Meera Rao', relation: 'mother' }, { name: 'Anil Rao', relation: 'father' }] };
 let transfersMode = 'ready';
+let identityMode = 'ready';
+const identityMatches = [
+  { id: 's1', registrationCode: 'R-0001', fullName: 'Asha Rao', status: 'active', className: 'Class 5', sectionName: 'A', hasPhoto: true },
+  { id: 's2', registrationCode: 'R-0014', fullName: 'Ashwin Kumar', status: 'paused', className: 'Class 7', sectionName: 'B', hasPhoto: false },
+];
+const identityCard = (hidden) => ({
+  id: 's1', registrationCode: 'R-0001', fullName: 'Asha Rao', status: 'active', gender: 'female', dateOfBirth: '2015-06-01', hasPhoto: true, contactsVisible: !hidden,
+  enrollment: { academicYear: '2026-27', className: 'Class 5', sectionName: 'A', rollNumber: '12' },
+  guardians: [
+    { id: 'g1', name: 'Meera Rao', relation: 'mother', isPrimary: true, isLegalCustody: true, canPickup: true, phone: hidden ? null : '9811122233', email: hidden ? null : 'meera.rao@example.test' },
+    { id: 'g2', name: 'Anil Rao', relation: 'father', isPrimary: false, isLegalCustody: true, canPickup: false, phone: hidden ? null : '9811144455', email: null },
+  ],
+  idCard: { instituteName: 'Springfield Public School', studentName: 'Asha Rao', registrationCode: 'R-0001', classSection: 'Class 5 - A', rollNumber: '12', dateOfBirth: '2015-06-01', academicYear: '2026-27', validUntil: '2027-03-31', primaryGuardianName: 'Meera Rao', emergencyPhone: hidden ? null : '9811122233' },
+});
+async function identityFind(p) {
+  await p.getByLabel('Name or registration code').fill('Ash');
+  await p.getByRole('button', { name: /Asha Rao/ }).click();
+  await p.waitForSelector('[data-testid=identity-card]');
+}
 // Student electives (STU-04) and change requests (STU-05)
 const elSubj = (id, name) => ({ id, code: id.toUpperCase(), name });
 const elGroup = { id: 'g1', name: 'Stream subjects', code: null, minSubjects: 1, maxSubjects: 2, enforceLimits: true };
@@ -356,6 +376,11 @@ async function mockApi(page, signedIn, mfa) {
       return json(200, { items, page: { number: 1, size: 25, total: items.length } });
     }
     if (path === '/academic-years' && alumniMode !== 'off') return json(200, { items: [{ id: 'y1', name: '2025-26' }, { id: 'y2', name: '2026-27' }], page: { number: 1, size: 200, total: 2 } });
+    if (path === '/student-identity') {
+      if (identityMode === 'error') return json(500, { code: 'internal', detail: 'The search could not be completed. Please try again.' });
+      return json(200, { items: identityMode === 'empty' ? [] : identityMatches });
+    }
+    if (path.startsWith('/student-identity/')) return identityMode === 'cardError' ? json(500, { code: 'internal', detail: 'The card could not be loaded. Please try again.' }) : json(200, identityCard(identityMode === 'hidden'));
     if (path === '/student-electives' && route.request().method() === 'GET') {
       if (electivesMode === 'error') return json(500, { code: 'internal', detail: 'The choices could not be loaded. Please try again.' });
       const items = electivesMode === 'empty' ? [] : elChoices;
@@ -437,6 +462,13 @@ const screens = [
   { name: 'promotions-undo-ask', path: '/promotions', signedIn: true, promo: 'committed', ready: 'text=Which class section?', then: async (p) => { await promoPick(p); await p.getByRole('button', { name: /Undo this promotion/ }).click(); await p.waitForSelector('role=alertdialog'); } },
   { name: 'promotions-undo-refused', path: '/promotions', signedIn: true, promo: 'committed', ready: 'text=Which class section?', then: async (p) => { await promoPick(p); await p.getByRole('button', { name: /Undo this promotion/ }).click(); await p.getByRole('textbox', { name: 'Why are you undoing it?' }).fill('Wrong year'); await p.getByRole('button', { name: 'Undo promotion' }).click(); await p.waitForSelector('text=can no longer be undone'); } },
   { name: 'promotions-history', path: '/promotions', signedIn: true, promo: 'draft', ready: 'text=Which class section?', then: async (p) => { await p.getByRole('button', { name: 'History' }).click(); await p.waitForSelector('text=Class 7 · Section A'); } },
+  { name: 'student-identity', path: '/student-identity', signedIn: true, ready: 'text=No student chosen' },
+  { name: 'student-identity-card', full: true, path: '/student-identity', signedIn: true, ready: 'text=No student chosen', then: identityFind },
+  { name: 'student-identity-hidden', full: true, path: '/student-identity', signedIn: true, identity: 'hidden', ready: 'text=No student chosen', then: identityFind },
+  { name: 'student-identity-print', full: true, path: '/student-identity', signedIn: true, print: true, ready: 'text=No student chosen', then: identityFind },
+  { name: 'student-identity-empty', path: '/student-identity', signedIn: true, identity: 'empty', ready: 'text=No student chosen', then: async (p) => { await p.getByLabel('Name or registration code').fill('Zzz'); await p.waitForSelector('text=No student matches'); } },
+  { name: 'student-identity-error', path: '/student-identity', signedIn: true, identity: 'error', ready: 'text=No student chosen', then: async (p) => { await p.getByLabel('Name or registration code').fill('Ash'); await p.waitForSelector('text=could not be completed'); } },
+  { name: 'student-identity-card-error', path: '/student-identity', signedIn: true, identity: 'cardError', ready: 'text=No student chosen', then: async (p) => { await p.getByLabel('Name or registration code').fill('Ash'); await p.getByRole('button', { name: /Asha Rao/ }).click(); await p.waitForSelector('text=card could not be loaded'); } },
   { name: 'transfers', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta' },
   { name: 'transfers-add', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: 'Request transfer' }).click().then(() => p.waitForSelector('role=dialog')) },
   { name: 'transfers-add-other-error', path: '/transfers', signedIn: true, ready: 'text=Kabir Mehta', then: async (p) => { await p.getByRole('button', { name: 'Request transfer' }).click(); const d = p.getByRole('dialog', { name: 'Request a transfer' }); await d.getByRole('combobox', { name: 'Reason *' }).selectOption('other'); await d.getByLabel('Note *').fill('Moving'); await d.getByLabel('Note *').fill(''); await d.getByRole('button', { name: 'Request transfer' }).click(); await d.getByText('Tell us the reason when you choose Other.').waitFor(); } },
@@ -539,6 +571,7 @@ for (const s of screens) {
     promoMode = s.promo ?? 'off';
     rolloverMode = s.rollover ?? 'off';
     transfersMode = s.transfers ?? 'ready';
+    identityMode = s.identity ?? 'ready';
     electivesMode = s.electives ?? 'ready';
     pausesMode = s.pauses ?? 'ready';
     alumniMode = s.alumni ?? 'ready';
