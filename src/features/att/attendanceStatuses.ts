@@ -5,7 +5,7 @@ export interface AttendanceStatus {
   code: string;
   name: string;
   shortName: string | null;
-  category: 'present' | 'absent' | 'late' | 'excused';
+  category: 'present' | 'absent' | 'late' | 'excused' | 'half_day' | 'holiday';
   color: string;
   isDefault: boolean;
   displayOrder: number;
@@ -18,6 +18,8 @@ const CATEGORIES = [
   { value: 'absent', label: 'Absent' },
   { value: 'late', label: 'Late' },
   { value: 'excused', label: 'Excused' },
+  { value: 'half_day', label: 'Half day' },
+  { value: 'holiday', label: 'Holiday' },
 ];
 const categoriesLabel = (v: string | null) => CATEGORIES.find((t) => t.value === v)?.label ?? '—';
 const text = (v: string | number | boolean | undefined) => String(v ?? '').trim();
