@@ -1,0 +1,29 @@
+{
+  "name": "entityConfigs", "Type": "EntityConfig", "module": "ten", "screenId": "entity_configs", "title": "Entity configs", "singular": "entry",
+  "doc": "TEN-02 Entity Configs", "endpoint": "/entity-configs", "permission": "ten.entity_configs", "icon": "ListChecks", "parity": "Web-only",
+  "blurb": "Houses, leave reasons and other lists your institute keeps.",
+  "defaultSort": "configType", "searchPlaceholder": "Search by code or name", "label": "name",
+  "consts": { "TYPES": [
+    { "value": "house", "label": "House" }, { "value": "leave_reason", "label": "Leave reason" }, { "value": "visit_purpose", "label": "Visit purpose" },
+    { "value": "document_kind", "label": "Document kind" }, { "value": "complaint_type", "label": "Complaint type" } ] },
+  "columns": [
+    { "key": "configType", "label": "Type", "sort": "configType", "render": "options:TYPES" },
+    { "key": "code", "label": "Code", "sort": "code" },
+    { "key": "name", "label": "Name", "sort": "name" },
+    { "key": "description", "label": "Description", "render": "dash" },
+    { "key": "status", "label": "Status", "render": "active" }
+  ],
+  "fields": [
+    { "key": "configType", "label": "Config type", "kind": "select", "required": true, "optionsConst": "TYPES", "enum": [{ "value": "house" }, { "value": "leave_reason" }, { "value": "visit_purpose" }, { "value": "document_kind" }, { "value": "complaint_type" }] },
+    { "key": "code", "label": "Code", "kind": "text", "required": true, "maxLength": 30, "hint": "Must be unique within the type." },
+    { "key": "name", "label": "Name", "kind": "text", "required": true, "maxLength": 100 },
+    { "key": "description", "label": "Description", "kind": "textarea", "nullable": true, "maxLength": 500 },
+    { "key": "sortOrder", "label": "Sort order", "kind": "number", "min": 0, "max": 100000, "default": 0 },
+    { "key": "status", "label": "Status", "kind": "select", "required": true, "default": "active", "enum": [{ "value": "active" }, { "value": "inactive" }],
+      "options": [{ "value": "active", "label": "Active" }, { "value": "inactive", "label": "Inactive" }] }
+  ],
+  "review": { "order": 22, "rows": [
+    { "configType": "house", "code": "RED", "name": "Red House", "description": null, "sortOrder": 1, "status": "active" },
+    { "configType": "leave_reason", "code": "SICK", "name": "Sick leave", "description": "Illness with a note", "sortOrder": 2, "status": "active" }
+  ] }
+}

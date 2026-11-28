@@ -49,6 +49,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   parent_links: HeartHandshake,
   appearance: Palette,
   approvals: ClipboardCheck,
+  entity_configs: ListChecks,
   profile: UserRound,
   school: School,
 };
@@ -96,4 +97,5 @@ export const NAV_BLURBS: Record<string, string> = {
   roles: 'What each kind of staff member can see and do.',
   parent_links: 'Which children each parent sees in the app.',
   appearance: 'Your school\'s colour and design style.',
+  entity_configs: 'Houses, leave reasons and other lists your institute keeps.',
 };
