@@ -34,6 +34,7 @@ import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studen
 import { chaptersDescriptor, classSectionsDescriptor, subjectClassesDescriptor, textbooksDescriptor } from '../features/aca/mappings';
 import { campusesDescriptor, divisionsDescriptor, electivesDescriptor, eventsDescriptor, holidaysDescriptor } from '../features/aca/masters';
 import { classesDescriptor, sectionsDescriptor, subjectsDescriptor, termsDescriptor, yearsDescriptor } from '../features/aca/structure';
+import { attendanceStatusesDescriptor } from '../features/att/attendanceStatuses';
 
 function Gate() {
   const { status } = useAuth();
@@ -384,6 +385,14 @@ function Gate() {
             }
           />
           <Route path="approvals" element={<ApprovalsPage />} />
+          <Route
+            path="attendance-statuses"
+            element={
+              <RequirePermission path="/attendance-statuses">
+                <ResourcePage descriptor={attendanceStatusesDescriptor} />
+              </RequirePermission>
+            }
+          />
           <Route path="*" element={<NotAvailablePage />} />
         </Route>
       </Routes>
