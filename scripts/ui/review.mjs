@@ -38,12 +38,14 @@ const nav = [
   { screenId: 'roles', label: 'Roles', order: 62 },
   { screenId: 'parent_links', label: 'Parent accounts', order: 63 },
   { screenId: 'appearance', label: 'Appearance', order: 64 },
+  { screenId: 'entity_configs', label: 'Entity configs', order: 22 },
   { screenId: 'approvals', label: 'Approvals', order: 70 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
 const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'onb.control_tower.view', 'onb.control_tower.edit', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create', 'stu.student_promotions.view', 'stu.student_promotions.create', 'stu.student_promotions.edit', 'stu.student_promotions.delete', 'stu.student_identity.view', 'stu.student_transfers.view', 'stu.student_transfers.create', 'stu.student_transfers.edit', 'stu.student_transfers.delete', 'stu.student_pauses.view', 'stu.student_pauses.create', 'stu.student_pauses.edit', 'stu.alumni.view'];
 permissions.push('stu.student_electives.view', 'stu.student_electives.edit', 'stu.student_electives.delete', 'stu.student_elective_approvals.view', 'stu.student_elective_approvals.create', 'stu.student_elective_approvals.edit');
 permissions.push('ten.year_rollover.view', 'ten.year_rollover.create', 'ten.year_rollover.edit');
+permissions.push('ten.entity_configs.view', 'ten.entity_configs.create', 'ten.entity_configs.edit', 'ten.entity_configs.delete');
 const admission = (n, o) => ({ id: `r${n}`, applicationNumber: `REG-0000${n}`, appliedOn: '2026-11-12', fullName: 'Diya Singh', dateOfBirth: '2021-03-14', gender: 'female', fatherName: 'Rahul Singh', motherName: null, guardianName: null, guardianPhone: '9810012345', classId: 'c1', className: 'Nursery', sectionId: null, sectionName: null, yearId: 'y1', yearName: '2027-28', status: 'accepted', admitted: false, admittedAt: null, studentId: null, studentCode: null, enrolledSectionName: null, rollNumber: null, ...o });
 const admissions = [admission(43, {}), admission(46, { fullName: 'Kabir Iyer', gender: null, className: 'Class 1', classId: 'c2' }), admission(47, { fullName: 'Aarav Sharma', sectionName: 'A' })];
 const students = [
@@ -365,6 +367,7 @@ async function mockApi(page, signedIn, mfa) {
     if (path === '/promotions/b1/preview') return json(200, promoOutcome(promoMode === 'problem'));
     if (path === '/promotions/b1/undo') return json(409, { code: 'cannot_undo', detail: 'This promotion can no longer be undone. Nothing was changed.', errors: [{ field: 's2', code: 'enrolment_changed', message: 'edited' }, { field: 's4', code: 'promoted_onward', message: 'again' }] });
     if (path === '/promotions/b1') return json(200, promoMode === 'committed' ? { batch: promoBatch({ status: 'committed', committedAt: '2026-11-21T05:00:00Z', committedByName: 'Asha Verma', undoUntil: '2026-11-28T05:00:00Z', canUndo: true }), rows: promoRows(true) } : { batch: promoBatch({}), rows: promoRows(false) });
+    if (path === '/entity-configs') return json(200, { items: [{"id":"entityConfigs1","configType":"house","code":"RED","name":"Red House","description":null,"sortOrder":1,"status":"active"},{"id":"entityConfigs2","configType":"leave_reason","code":"SICK","name":"Sick leave","description":"Illness with a note","sortOrder":2,"status":"active"}], page: { number: 1, size: 25, total: 2 } });
     if (path === '/enquiry-discussions') {
       const e = new URL(route.request().url()).searchParams.get('enquiryId');
       const items = e ? discussions.filter((d) => d.enquiryId === e) : discussions;
@@ -572,6 +575,8 @@ const screens = [
   { name: 'handover-no-rights', path: '/approvals?tab=handovers', signedIn: true, denied: true, ready: 'text=Away at a conference in Hyderabad', then: async (p) => { await p.getByRole('button', { name: /Hand over my approvals/ }).click(); await p.getByLabel(/^Colleague \*$/).fill('Ravi'); await p.waitForSelector('option:has-text("Ravi Nair")', { state: 'attached' }); await p.getByLabel('Colleague results').selectOption({ index: 1 }); await p.getByLabel(/^Ends/).fill(new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 16)); await p.getByRole('button', { name: 'Hand over', exact: true }).click(); await p.waitForSelector('text=only when you can decide some yourself'); } },
   { name: 'handover-end-confirm', path: '/approvals?tab=handovers', signedIn: true, ready: 'text=Away at a conference in Hyderabad', then: async (p) => { await p.getByRole('button', { name: /End handover to Kavita Rao now/ }).click(); await p.waitForSelector('role=alertdialog'); } },
   { name: 'approvals-empty', path: '/approvals', signedIn: true, empty: true, ready: 'text=Nothing is waiting for you' },
+  { name: 'entity-configs', path: '/entity-configs', signedIn: true, ready: 'text=Red House' },
+  { name: 'entity-configs-add', path: '/entity-configs', signedIn: true, ready: 'text=Red House', then: (p) => p.getByRole('button', { name: 'Add entry' }).click().then(() => p.waitForSelector('role=dialog')) },
   { name: 'palette', path: '/', signedIn: true, ready: 'text=Welcome, Asha Verma', then: (p) => p.keyboard.press('Control+k').then(() => p.waitForSelector('role=dialog')) },
 ];
 const sizes = [

@@ -34,6 +34,7 @@ import { addressesDescriptor, enrollmentsDescriptor, guardiansDescriptor, studen
 import { chaptersDescriptor, classSectionsDescriptor, subjectClassesDescriptor, textbooksDescriptor } from '../features/aca/mappings';
 import { campusesDescriptor, divisionsDescriptor, electivesDescriptor, eventsDescriptor, holidaysDescriptor } from '../features/aca/masters';
 import { classesDescriptor, sectionsDescriptor, subjectsDescriptor, termsDescriptor, yearsDescriptor } from '../features/aca/structure';
+import { entityConfigsDescriptor } from '../features/ten/entityConfigs';
 
 function Gate() {
   const { status } = useAuth();
@@ -384,6 +385,14 @@ function Gate() {
             }
           />
           <Route path="approvals" element={<ApprovalsPage />} />
+          <Route
+            path="entity-configs"
+            element={
+              <RequirePermission path="/entity-configs">
+                <ResourcePage descriptor={entityConfigsDescriptor} />
+              </RequirePermission>
+            }
+          />
           <Route path="*" element={<NotAvailablePage />} />
         </Route>
       </Routes>
