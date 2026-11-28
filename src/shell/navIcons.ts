@@ -1,7 +1,7 @@
 import {
   ArrowRightLeft, Award, Gauge, BarChart3, CalendarSync, CirclePause, BookMarked, ClipboardCheck, FileUser, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardList,
   Columns3, DoorOpen, GitBranch, GraduationCap, Grid3x3, HeartHandshake, IdCard, Home, Layers, Link2, MessagesSquare,
-  Palette, ListChecks, ListOrdered, MapPin, School, ShieldCheck, Sun, Upload, UserCheck, UserCog, UserRound,
+  Palette, Rocket, ListChecks, ListOrdered, MapPin, School, ShieldCheck, Sun, Upload, UserCheck, UserCog, UserRound,
   UserSearch, Users, UserRoundCheck, TrendingUp, type LucideIcon,
 } from 'lucide-react';
 
@@ -10,6 +10,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   home: Home,
   onboarding: Upload,
   control_tower: Gauge,
+  go_live: Rocket,
   rooms: DoorOpen,
   academic_years: CalendarRange,
   academic_terms: CalendarDays,
@@ -56,6 +57,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
 /** A line under each shortcut on the home page. */
 export const NAV_BLURBS: Record<string, string> = {
   onboarding: 'Bring your existing records in from spreadsheets.',
+  go_live: 'Check every part is ready, then sign off and go live.',
   control_tower: 'How ready each part of your data is for go-live, and who owns it.',
   rooms: 'Classrooms, labs and halls, with their capacity.',
   academic_years: 'The years your school runs, and which one is current.',

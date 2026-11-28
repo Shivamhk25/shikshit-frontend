@@ -16,6 +16,7 @@ const nav = [
   { screenId: 'home', label: 'Home', order: 1 },
   { screenId: 'onboarding', label: 'Onboarding', order: 2 },
   { screenId: 'control_tower', label: 'Control tower', order: 3 },
+  { screenId: 'go_live', label: 'Go-live', order: 4 },
   { screenId: 'academic_years', label: 'Academic years', order: 21 },
   { screenId: 'year_rollover', label: 'Year rollover', order: 22 },
   { screenId: 'classes', label: 'Classes', order: 23 },
@@ -41,7 +42,7 @@ const nav = [
   { screenId: 'approvals', label: 'Approvals', order: 70 },
   { screenId: 'profile', label: 'Profile', order: 90 },
 ];
-const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'onb.control_tower.view', 'onb.control_tower.edit', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create', 'stu.student_promotions.view', 'stu.student_promotions.create', 'stu.student_promotions.edit', 'stu.student_promotions.delete', 'stu.student_identity.view', 'stu.student_transfers.view', 'stu.student_transfers.create', 'stu.student_transfers.edit', 'stu.student_transfers.delete', 'stu.student_pauses.view', 'stu.student_pauses.create', 'stu.student_pauses.edit', 'stu.alumni.view'];
+const permissions = ['adm.admission_insights.view', 'onb.workspace.view', 'onb.control_tower.view', 'onb.control_tower.edit', 'onb.golive.view', 'onb.golive.signoff', 'aca.academic_years.view', 'aca.classes.view', 'adm.enquiry.view', 'adm.enquiry.create', 'adm.enquiry.edit', 'adm.enquiry.delete', 'adm.enquiry_discussions.view', 'adm.enquiry_discussions.create', 'adm.enquiry_discussions.edit', 'adm.enquiry_discussions.delete', 'stu.students.view', 'stu.students.create', 'stu.students.edit', 'stu.students.delete', 'iam.users.view', 'iam.users.create', 'iam.users.edit', 'iam.scope_assignments.view', 'iam.scope_assignments.edit', 'iam.roles.view', 'iam.roles.create', 'iam.roles.edit', 'iam.roles.delete', 'iam.parent_links.view', 'iam.parent_links.create', 'iam.parent_links.edit', 'iam.parent_links.delete', 'iam.appearance.view', 'iam.appearance.manage', 'adm.student_registrations.view', 'adm.student_registrations.create', 'adm.student_registrations.edit', 'adm.student_registrations.delete', 'adm.admissions.view', 'adm.admissions.create', 'stu.student_promotions.view', 'stu.student_promotions.create', 'stu.student_promotions.edit', 'stu.student_promotions.delete', 'stu.student_identity.view', 'stu.student_transfers.view', 'stu.student_transfers.create', 'stu.student_transfers.edit', 'stu.student_transfers.delete', 'stu.student_pauses.view', 'stu.student_pauses.create', 'stu.student_pauses.edit', 'stu.alumni.view'];
 permissions.push('stu.student_electives.view', 'stu.student_electives.edit', 'stu.student_electives.delete', 'stu.student_elective_approvals.view', 'stu.student_elective_approvals.create', 'stu.student_elective_approvals.edit');
 permissions.push('ten.year_rollover.view', 'ten.year_rollover.create', 'ten.year_rollover.edit');
 const admission = (n, o) => ({ id: `r${n}`, applicationNumber: `REG-0000${n}`, appliedOn: '2026-11-12', fullName: 'Diya Singh', dateOfBirth: '2021-03-14', gender: 'female', fatherName: 'Rahul Singh', motherName: null, guardianName: null, guardianPhone: '9810012345', classId: 'c1', className: 'Nursery', sectionId: null, sectionName: null, yearId: 'y1', yearName: '2027-28', status: 'accepted', admitted: false, admittedAt: null, studentId: null, studentCode: null, enrolledSectionName: null, rollNumber: null, ...o });
@@ -379,6 +380,10 @@ async function mockApi(page, signedIn, mfa) {
     }
     if (path === '/student-pauses' && route.request().method() === 'POST') return pausesMode === 'conflict' ? json(409, { code: 'already_paused', detail: 'x' }) : json(201, pauses[0]);
     if (path.startsWith('/student-pauses/')) return json(200, pauses[0]);
+    if (path === '/onboarding/go-live') {
+      const domains = [{ id: 'academic', title: 'Academic structure', status: 'ready', percent: 100, assessable: true, ready: true }, { id: 'students', title: 'Students and guardians', status: 'in_progress', percent: 62, assessable: true, ready: false }, { id: 'fees', title: 'Fees', status: 'not_started', percent: 0, assessable: false, ready: false }];
+      return json(200, { tenantStatus: 'onboarding', open: false, domains, reasons: ['Students and guardians is not ready (62 %).', 'Fees has no data source yet.'], history: [] });
+    }
     if (path === '/onboarding/control-tower') {
       if (towerMode === 'error') return json(500, { code: 'internal', detail: 'The control tower could not be loaded. Please try again.' });
       if (towerMode === 'denied') return json(403, { code: 'permission_denied', detail: 'You do not have permission to see the control tower.' });
@@ -519,6 +524,7 @@ const screens = [
   { name: 'pauses-cancel-confirm', path: '/student-pauses', signedIn: true, ready: 'text=Kabir Mehta', then: (p) => p.getByRole('button', { name: /^Cancel pause of Kabir Mehta/ }).click().then(() => p.waitForSelector('role=alertdialog')) },
   { name: 'pauses-empty', path: '/student-pauses', signedIn: true, pauses: 'empty', ready: 'text=No pauses yet' },
   { name: 'pauses-error', path: '/student-pauses', signedIn: true, pauses: 'error', ready: 'text=could not be loaded' },
+  { name: 'go-live', path: '/go-live', signedIn: true, ready: 'text=Go-live is blocked' },
   { name: 'control-tower', path: '/control-tower', signedIn: true, ready: 'text=Students and guardians' },
   { name: 'control-tower-detail-blocked', path: '/control-tower', signedIn: true, ready: 'text=Students and guardians', then: (p) => p.getByRole('button', { name: 'Details of Fees' }).click().then(() => p.waitForSelector('[data-testid=domain-detail]')) },
   { name: 'control-tower-detail-progress', path: '/control-tower', signedIn: true, ready: 'text=Students and guardians', then: (p) => p.getByRole('button', { name: 'Details of Students and guardians' }).click().then(() => p.waitForSelector('[data-testid=domain-detail]')) },
