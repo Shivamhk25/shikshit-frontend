@@ -1,0 +1,32 @@
+{
+  "name": "attendanceStatuses", "Type": "AttendanceStatus", "module": "att", "screenId": "attendance_statuses", "title": "Attendance statuses", "singular": "status",
+  "doc": "ATT-08 Attendance Statuses", "endpoint": "/attendance-statuses", "permission": "att.attendance_statuses", "icon": "ListChecks", "parity": "Companion", "mobileRoute": "/attendance-statuses",
+  "blurb": "The marks teachers use on attendance registers, such as Present and Late.",
+  "defaultSort": "displayOrder", "searchPlaceholder": "Search by code or name", "label": "name",
+  "consts": { "CATEGORIES": [
+    { "value": "present", "label": "Present" }, { "value": "absent", "label": "Absent" }, { "value": "late", "label": "Late" }, { "value": "excused", "label": "Excused" } ] },
+  "columns": [
+    { "key": "code", "label": "Code", "sort": "code" },
+    { "key": "name", "label": "Name", "sort": "name" },
+    { "key": "shortName", "label": "Short name", "render": "dash" },
+    { "key": "category", "label": "Category", "sort": "category", "render": "options:CATEGORIES" },
+    { "key": "color", "label": "Colour" },
+    { "key": "status", "label": "Status", "render": "active" }
+  ],
+  "fields": [
+    { "key": "code", "label": "Code", "kind": "text", "required": true, "maxLength": 20, "hint": "Must be unique." },
+    { "key": "name", "label": "Name", "kind": "text", "required": true, "maxLength": 100 },
+    { "key": "shortName", "label": "Short name", "kind": "text", "nullable": true, "maxLength": 20 },
+    { "key": "category", "label": "Counts as", "kind": "select", "required": true, "optionsConst": "CATEGORIES", "enum": [{ "value": "present" }, { "value": "absent" }, { "value": "late" }, { "value": "excused" }] },
+    { "key": "color", "label": "Colour", "kind": "text", "required": true, "maxLength": 7, "hint": "Hex colour such as #2E7D32." },
+    { "key": "isDefault", "label": "Default status", "kind": "checkbox", "default": false },
+    { "key": "displayOrder", "label": "Display order", "kind": "number", "min": 0, "max": 100000, "default": 0 },
+    { "key": "description", "label": "Description", "kind": "textarea", "nullable": true, "maxLength": 500 },
+    { "key": "status", "label": "Status", "kind": "select", "required": true, "default": "active", "enum": [{ "value": "active" }, { "value": "inactive" }],
+      "options": [{ "value": "active", "label": "Active" }, { "value": "inactive", "label": "Inactive" }] }
+  ],
+  "review": { "order": 50, "rows": [
+    { "code": "P", "name": "Present", "shortName": "P", "category": "present", "color": "#2E7D32", "isDefault": true, "displayOrder": 1, "description": null, "status": "active" },
+    { "code": "A", "name": "Absent", "shortName": "A", "category": "absent", "color": "#C62828", "isDefault": false, "displayOrder": 2, "description": null, "status": "active" }
+  ] }
+}
